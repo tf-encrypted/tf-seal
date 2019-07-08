@@ -13,3 +13,6 @@ class SealTest(test.TestCase):
       variant = seal_import(inp)
 
       variant.eval()
+
+if __name__ == '__main__':
+  test.main()
