@@ -1,4 +1,4 @@
-#include <seal/seal.h>
+#include "seal/seal.h"
 
 #include "tf_seal/cc/kernels/seal_tensor.h"
 

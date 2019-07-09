@@ -1,5 +1,3 @@
-#include <seal/seal.h>
-
 #include <iostream>
 #include <vector>
 
@@ -10,6 +8,8 @@
 #include "tensorflow/core/framework/variant_encode_decode.h"
 #include "tensorflow/core/framework/variant_op_registry.h"
 #include "tensorflow/core/framework/variant_tensor_data.h"
+
+#include "seal/seal.h"
 
 #include "tf_seal/cc/kernels/seal_tensor.h"
 

@@ -10,4 +10,7 @@ fmt:
 lint:
 	cd tf_seal && find . -iname *.h -o -iname *.cc | xargs cpplint --filter=-legal/copyright
 
-.PHONY: test fmt
+clean:
+	bazel clean
+
+.PHONY: test fmt lint clean

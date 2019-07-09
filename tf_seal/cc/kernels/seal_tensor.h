@@ -1,8 +1,6 @@
 #ifndef TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
 #define TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
 
-#include <seal/seal.h>
-
 #include <string>
 
 #include "tensorflow/core/framework/op.h"
@@ -12,6 +10,8 @@
 #include "tensorflow/core/framework/variant_encode_decode.h"
 #include "tensorflow/core/framework/variant_op_registry.h"
 #include "tensorflow/core/framework/variant_tensor_data.h"
+
+#include "seal/seal.h"
 
 using tensorflow::VariantTensorData;
 
