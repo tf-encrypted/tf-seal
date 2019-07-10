@@ -31,4 +31,4 @@ bool SecretKeyVariant::Decode(const VariantTensorData& data) {
 const char PublicKeyVariant::kTypeName[] = "PublicKeyVariant";
 const char SecretKeyVariant::kTypeName[] = "SecretKeyVariant";
 
-}
+}  // namespace tf_seal

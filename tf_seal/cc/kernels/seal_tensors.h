@@ -1,5 +1,5 @@
-#ifndef TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
-#define TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
+#ifndef TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_
+#define TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_
 
 #include <string>
 
@@ -75,4 +75,4 @@ class PlainTensor : public SealTensor {
 
 }  // namespace tf_seal
 
-#endif  // TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
+#endif  // TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_

@@ -11,8 +11,8 @@
 
 #include "seal/seal.h"
 
-#include "tf_seal/cc/kernels/seal_tensors.h"
 #include "tf_seal/cc/kernels/key_variants.h"
+#include "tf_seal/cc/kernels/seal_tensors.h"
 
 namespace tf_seal {
 
@@ -31,8 +31,7 @@ const double kScale = pow(2.0, 40);
 const size_t kPolyModulusDegree = 8192;
 
 template <typename T>
-Status GetVariant(OpKernelContext* ctx, int index,
-                  const T** res) {
+Status GetVariant(OpKernelContext* ctx, int index, const T** res) {
   const Tensor& input = ctx->input(index);
 
   // TODO(justin1121): check scalar type

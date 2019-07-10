@@ -1,3 +1,6 @@
+#ifndef TF_SEAL_CC_KERNELS_KEY_VARIANTS_H_
+#define TF_SEAL_CC_KERNELS_KEY_VARIANTS_H_
+
 #include <string>
 
 #include "tensorflow/core/framework/op.h"
@@ -19,7 +22,7 @@ namespace tf_seal {
 
 class PublicKeyVariant {
  public:
-  PublicKeyVariant(PublicKey key) : key(key) {}
+  explicit PublicKeyVariant(PublicKey key) : key(key) {}
   PublicKeyVariant(const PublicKeyVariant& other);
 
   static const char kTypeName[];
@@ -37,7 +40,7 @@ class PublicKeyVariant {
 
 class SecretKeyVariant {
  public:
-  SecretKeyVariant(SecretKey key) : key(key) {}
+  explicit SecretKeyVariant(SecretKey key) : key(key) {}
   SecretKeyVariant(const SecretKeyVariant& other);
 
   static const char kTypeName[];
@@ -53,4 +56,6 @@ class SecretKeyVariant {
   SecretKey key;
 };
 
-}
+}  // namespace tf_seal
+
+#endif  // TF_SEAL_CC_KERNELS_KEY_VARIANTS_H_
