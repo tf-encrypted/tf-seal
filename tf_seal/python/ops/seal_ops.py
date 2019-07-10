@@ -10,3 +10,4 @@ seal_encode = seal_ops.seal_encode
 seal_decode = seal_ops.seal_decode
 seal_add = seal_ops.seal_add
 seal_add_plain = seal_ops.seal_add_plain
+seal_key_gen = seal_ops.seal_key_gen

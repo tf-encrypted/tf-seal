@@ -8,6 +8,8 @@ cc_binary(
         "cc/kernels/seal_kernels.cc",
         "cc/kernels/seal_tensors.h",
         "cc/kernels/seal_tensors.cc",
+        "cc/kernels/key_variants.h",
+        "cc/kernels/key_variants.cc",
         "cc/ops/seal_ops.cc",
     ],
     linkshared = 1,

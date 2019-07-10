@@ -12,62 +12,34 @@
 #include "seal/seal.h"
 
 #include "tf_seal/cc/kernels/seal_tensors.h"
+#include "tf_seal/cc/kernels/key_variants.h"
 
 namespace tf_seal {
 
-using tensorflow::Status;
-using tensorflow::Variant;
-using tensorflow::OpKernelContext;
-using tensorflow::OpKernelConstruction;
-using tensorflow::Tensor;
-using tensorflow::errors::InvalidArgument;
 using tensorflow::DEVICE_CPU;
-using tensorflow::TensorShape;
 using tensorflow::OpKernel;
+using tensorflow::OpKernelConstruction;
+using tensorflow::OpKernelContext;
+using tensorflow::Status;
+using tensorflow::Tensor;
+using tensorflow::TensorShape;
 using tensorflow::TensorShapeUtils;
+using tensorflow::Variant;
+using tensorflow::errors::InvalidArgument;
 
 const double kScale = pow(2.0, 40);
 const size_t kPolyModulusDegree = 8192;
 
-Status GetSealTensor(OpKernelContext* ctx, int index, const SealTensor** res) {
+template <typename T>
+Status GetVariant(OpKernelContext* ctx, int index,
+                  const T** res) {
   const Tensor& input = ctx->input(index);
 
   // TODO(justin1121): check scalar type
-  const SealTensor* t = input.scalar<Variant>()().get<SealTensor>();
-  if (t == nullptr) {
-    return InvalidArgument("Input handle is not a seal tensor. Saw: '",
-                                   input.scalar<Variant>()().DebugString(),
-                                   "'");
-  }
-
-  *res = t;
-  return Status::OK();
-}
-
-Status GetCipherTensor(OpKernelContext* ctx, int index, const CipherTensor** res) {
-  const Tensor& input = ctx->input(index);
-
-  // TODO(justin1121): check scalar type
-  const CipherTensor* t = input.scalar<Variant>()().get<CipherTensor>();
+  const T* t = input.scalar<Variant>()().get<T>();
   if (t == nullptr) {
     return InvalidArgument("Input handle is not a cipher tensor. Saw: '",
-                                   input.scalar<Variant>()().DebugString(),
-                                   "'");
-  }
-
-  *res = t;
-  return Status::OK();
-}
-
-Status GetPlainTensor(OpKernelContext* ctx, int index, const PlainTensor** res) {
-  const Tensor& input = ctx->input(index);
-
-  // TODO(justin1121): check scalar type
-  const PlainTensor* t = input.scalar<Variant>()().get<PlainTensor>();
-  if (t == nullptr) {
-    return InvalidArgument("Input handle is not a plain tensor. Saw: '",
-                                   input.scalar<Variant>()().DebugString(),
-                                   "'");
+                           input.scalar<Variant>()().DebugString(), "'");
   }
 
   *res = t;
@@ -84,6 +56,26 @@ std::shared_ptr<seal::SEALContext> SetParams() {
   return seal::SEALContext::Create(parms);
 }
 
+class SealKeyGenOp : public OpKernel {
+ public:
+  explicit SealKeyGenOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* ctx) override {
+    Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+
+    Tensor* out1;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
+
+    auto context = SetParams();
+
+    seal::KeyGenerator gen(context);
+
+    out0->scalar<Variant>()() = PublicKeyVariant(gen.public_key());
+    out1->scalar<Variant>()() = SecretKeyVariant(gen.secret_key());
+  }
+};
+
 template <typename T>
 class SealEncryptOp : public OpKernel {
  public:
@@ -91,19 +83,22 @@ class SealEncryptOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const Tensor& input = ctx->input(0);
-    OP_REQUIRES(ctx, TensorShapeUtils::IsMatrix(input.shape()),
-                InvalidArgument(
-                    "value expected to be a matrix ",
-                    "but got shape: ", input.shape().DebugString()));
+    OP_REQUIRES(
+        ctx, TensorShapeUtils::IsMatrix(input.shape()),
+        InvalidArgument("value expected to be a matrix ",
+                        "but got shape: ", input.shape().DebugString()));
 
     // TODO(justin1121): this only temporary until we figure out the best way to
     // encode large number of elements: the encoder can only handle
     // kPolyModulusDegree / 2 at a time or maybe in total for each encoder?
     // something to figure out
-    OP_REQUIRES(ctx, input.NumElements() <= kPolyModulusDegree / 2,
-                InvalidArgument(
-                    "too many elements, must be less than or equal to ",
-                    kPolyModulusDegree / 2));
+    OP_REQUIRES(
+        ctx, input.NumElements() <= kPolyModulusDegree / 2,
+        InvalidArgument("too many elements, must be less than or equal to ",
+                        kPolyModulusDegree / 2));
+
+    const PublicKeyVariant* key = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
 
     Tensor* val;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &val));
@@ -112,23 +107,18 @@ class SealEncryptOp : public OpKernel {
 
     CipherTensor cipher(input.dim_size(0), input.dim_size(1));
 
-    seal::KeyGenerator keygen(context);
-    cipher.pub_key = keygen.public_key();
-    cipher.sec_key = keygen.secret_key();
-
-    seal::Encryptor encryptor(context, cipher.pub_key);
+    seal::Encryptor encryptor(context, key->key);
     seal::CKKSEncoder encoder(context);
-
 
     auto data = input.flat<T>().data();
     auto size = input.flat<T>().size();
 
-    seal::Plaintext x_plain;
+    seal::Plaintext plain;
 
     // SEAL only takes doubles so cast to that
     // TODO(justin1121): can we get rid of this nasty copy?!
-    encoder.encode(std::vector<double>(data, data + size), kScale, x_plain);
-    encryptor.encrypt(x_plain, cipher.value);
+    encoder.encode(std::vector<double>(data, data + size), kScale, plain);
+    encryptor.encrypt(plain, cipher.value);
 
     val->scalar<Variant>()() = std::move(cipher);
   }
@@ -141,7 +131,10 @@ class SealDecryptOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const CipherTensor* val = nullptr;
-    OP_REQUIRES_OK(ctx, GetCipherTensor(ctx, 0, &val));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &val));
+
+    const SecretKeyVariant* key = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
 
     auto output_shape = TensorShape{val->rows(), val->cols()};
 
@@ -150,7 +143,7 @@ class SealDecryptOp : public OpKernel {
 
     auto context = SetParams();
 
-    seal::Decryptor decryptor(context, val->sec_key);
+    seal::Decryptor decryptor(context, key->key);
 
     seal::Plaintext plain_result;
     decryptor.decrypt(val->value, plain_result);
@@ -175,19 +168,19 @@ class SealEncodeOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const Tensor& input = ctx->input(0);
-    OP_REQUIRES(ctx, TensorShapeUtils::IsMatrix(input.shape()),
-                InvalidArgument(
-                    "value expected to be a matrix ",
-                    "but got shape: ", input.shape().DebugString()));
+    OP_REQUIRES(
+        ctx, TensorShapeUtils::IsMatrix(input.shape()),
+        InvalidArgument("value expected to be a matrix ",
+                        "but got shape: ", input.shape().DebugString()));
 
     // TODO(justin1121): this only temporary until we figure out the best way to
     // encode large number of elements: the encoder can only handle
     // kPolyModulusDegree / 2 at a time or maybe in total for each encoder?
     // something to figure out
-    OP_REQUIRES(ctx, input.NumElements() <= kPolyModulusDegree / 2,
-                InvalidArgument(
-                    "too many elements, must be less than or equal to ",
-                    kPolyModulusDegree / 2));
+    OP_REQUIRES(
+        ctx, input.NumElements() <= kPolyModulusDegree / 2,
+        InvalidArgument("too many elements, must be less than or equal to ",
+                        kPolyModulusDegree / 2));
 
     Tensor* val;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &val));
@@ -216,7 +209,7 @@ class SealDecodeOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const PlainTensor* val = nullptr;
-    OP_REQUIRES_OK(ctx, GetPlainTensor(ctx, 0, &val));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &val));
 
     auto output_shape = TensorShape{val->rows(), val->cols()};
 
@@ -244,17 +237,17 @@ class SealAddOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const CipherTensor* a = nullptr;
-    OP_REQUIRES_OK(ctx, GetCipherTensor(ctx, 0, &a));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &a));
 
     const CipherTensor* b = nullptr;
-    OP_REQUIRES_OK(ctx, GetCipherTensor(ctx, 1, &b));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &b));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    CipherTensor res(a->rows(), b->rows());
-
     auto context = SetParams();
+
+    CipherTensor res(*a);
 
     seal::Evaluator evaluator(context);
 
@@ -270,17 +263,17 @@ class SealAddPlainOp : public OpKernel {
 
   void Compute(OpKernelContext* ctx) override {
     const CipherTensor* a = nullptr;
-    OP_REQUIRES_OK(ctx, GetCipherTensor(ctx, 0, &a));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &a));
 
     const PlainTensor* b = nullptr;
-    OP_REQUIRES_OK(ctx, GetPlainTensor(ctx, 1, &b));
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &b));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    CipherTensor res(a->rows(), b->rows());
-
     auto context = SetParams();
+
+    CipherTensor res(*a);
 
     seal::Evaluator evaluator(context);
 
@@ -308,7 +301,9 @@ class SealAddPlainOp : public OpKernel {
 REGISTER_CPU(float);
 REGISTER_CPU(double);
 
+REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
-REGISTER_KERNEL_BUILDER(Name("SealAddPlain").Device(DEVICE_CPU), SealAddPlainOp);
+REGISTER_KERNEL_BUILDER(Name("SealAddPlain").Device(DEVICE_CPU),
+                        SealAddPlainOp);
 
-}
+}  // namespace tf_seal
