@@ -13,13 +13,21 @@
 
 #include "tf_seal/cc/kernels/seal_tensor.h"
 
-using namespace tensorflow;  // NOLINT
-using namespace seal;        // NOLINT
+namespace tf_seal {
 
-using tf_seal::SealTensor;
+using tensorflow::Status;
+using tensorflow::Variant;
+using tensorflow::OpKernelContext;
+using tensorflow::OpKernelConstruction;
+using tensorflow::Tensor;
+using tensorflow::errors::InvalidArgument;
+using tensorflow::DEVICE_CPU;
+using tensorflow::TensorShape;
+using tensorflow::OpKernel;
+using tensorflow::TensorShapeUtils;
 
-const double SCALE = pow(2.0, 40);
-const size_t POLY_MODULUS_DEGREE = 8192;
+const double kScale = pow(2.0, 40);
+const size_t kPolyModulusDegree = 8192;
 
 Status GetSealTensor(OpKernelContext* ctx, int index, const SealTensor** res) {
   const Tensor& input = ctx->input(index);
@@ -27,7 +35,7 @@ Status GetSealTensor(OpKernelContext* ctx, int index, const SealTensor** res) {
   // TODO(justin1121): check scalar type
   const SealTensor* big = input.scalar<Variant>()().get<SealTensor>();
   if (big == nullptr) {
-    return errors::InvalidArgument("Input handle is not a seal tensor. Saw: '",
+    return InvalidArgument("Input handle is not a seal tensor. Saw: '",
                                    input.scalar<Variant>()().DebugString(),
                                    "'");
   }
@@ -36,14 +44,14 @@ Status GetSealTensor(OpKernelContext* ctx, int index, const SealTensor** res) {
   return Status::OK();
 }
 
-std::shared_ptr<SEALContext> set_params() {
-  EncryptionParameters parms(scheme_type::CKKS);
+std::shared_ptr<seal::SEALContext> SetParams() {
+  seal::EncryptionParameters parms(seal::scheme_type::CKKS);
 
-  parms.set_poly_modulus_degree(POLY_MODULUS_DEGREE);
+  parms.set_poly_modulus_degree(kPolyModulusDegree);
   parms.set_coeff_modulus(
-      CoeffModulus::Create(POLY_MODULUS_DEGREE, {60, 40, 40, 60}));
+      seal::CoeffModulus::Create(kPolyModulusDegree, {60, 40, 40, 60}));
 
-  return SEALContext::Create(parms);
+  return seal::SEALContext::Create(parms);
 }
 
 template <typename T>
@@ -54,41 +62,41 @@ class SealEncryptOp : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
     const Tensor& input = ctx->input(0);
     OP_REQUIRES(ctx, TensorShapeUtils::IsMatrix(input.shape()),
-                errors::InvalidArgument(
+                InvalidArgument(
                     "value expected to be a matrix ",
                     "but got shape: ", input.shape().DebugString()));
 
     // TODO(justin1121): this only temporary until we figure out the best way to
     // encode large number of elements: the encoder can only handle
-    // POLY_MODULUS_DEGREE / 2 at a time or maybe in total for each encoder?
+    // kPolyModulusDegree / 2 at a time or maybe in total for each encoder?
     // something to figure out
-    OP_REQUIRES(ctx, input.NumElements() <= POLY_MODULUS_DEGREE / 2,
-                errors::InvalidArgument(
+    OP_REQUIRES(ctx, input.NumElements() <= kPolyModulusDegree / 2,
+                InvalidArgument(
                     "too many elements, must be less than or equal to ",
-                    POLY_MODULUS_DEGREE / 2));
+                    kPolyModulusDegree / 2));
 
     Tensor* val;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &val));
 
-    auto context = set_params();
+    auto context = SetParams();
 
-    tf_seal::SealTensor s_tensor(input.dim_size(0), input.dim_size(1));
+    SealTensor s_tensor(input.dim_size(0), input.dim_size(1));
 
-    KeyGenerator keygen(context);
+    seal::KeyGenerator keygen(context);
     s_tensor.pub_key = keygen.public_key();
     s_tensor.sec_key = keygen.secret_key();
-    Encryptor encryptor(context, s_tensor.pub_key);
+    seal::Encryptor encryptor(context, s_tensor.pub_key);
 
-    CKKSEncoder encoder(context);
+    seal::CKKSEncoder encoder(context);
 
-    Plaintext x_plain;
+    seal::Plaintext x_plain;
 
     auto data = input.flat<T>().data();
     size_t size = input.flat<T>().size();
 
     // SEAL only takes doubles so cast to that
     // TODO(justin1121): can we get rid of this nasty copy?!
-    encoder.encode(std::vector<double>(data, data + size), SCALE, x_plain);
+    encoder.encode(std::vector<double>(data, data + size), kScale, x_plain);
     encryptor.encrypt(x_plain, s_tensor.value);
 
     val->scalar<Variant>()() = std::move(s_tensor);
@@ -109,21 +117,22 @@ class SealDecryptOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, output_shape, &output));
 
-    auto context = set_params();
+    auto context = SetParams();
 
-    Decryptor decryptor(context, val->sec_key);
+    seal::Decryptor decryptor(context, val->sec_key);
 
-    Plaintext plain_result;
+    seal::Plaintext plain_result;
     decryptor.decrypt(val->value, plain_result);
 
-    CKKSEncoder encoder(context);
+    seal::CKKSEncoder encoder(context);
 
     std::vector<double> result;
     encoder.decode(plain_result, result);
 
-    // SEAL only returns doubles so cast back to T here, i.e. float
     T* data = output->flat<T>().data();
     size_t size = output->flat<T>().size();
+
+    // SEAL only returns doubles so implicitly cast back to T here, e.g. float
     std::copy_n(result.begin(), size, data);
   }
 };
@@ -139,3 +148,5 @@ class SealDecryptOp : public OpKernel {
 
 REGISTER_CPU(float);
 REGISTER_CPU(double);
+
+}
