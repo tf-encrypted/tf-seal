@@ -6,8 +6,8 @@ cc_binary(
     name = 'python/ops/_seal_ops.so',
     srcs = [
         "cc/kernels/seal_kernels.cc",
-        "cc/kernels/seal_tensor.h",
-        "cc/kernels/seal_tensor.cc",
+        "cc/kernels/seal_tensors.h",
+        "cc/kernels/seal_tensors.cc",
         "cc/ops/seal_ops.cc",
     ],
     linkshared = 1,
