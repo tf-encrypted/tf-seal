@@ -33,3 +33,5 @@
 
 # Misc
 .vscode
+bazel*
+.bazelrc
