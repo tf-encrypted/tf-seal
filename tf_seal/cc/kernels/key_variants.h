@@ -51,7 +51,7 @@ class SecretKeyVariant {
 
   bool Decode(const VariantTensorData& data);
 
-  std::string DebugString() const { return "PublicKeyVariant"; }
+  std::string DebugString() const { return "SecretKeyVariant"; }
 
   SecretKey key;
 };
