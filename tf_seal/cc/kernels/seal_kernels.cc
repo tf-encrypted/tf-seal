@@ -160,76 +160,6 @@ class SealDecryptOp : public OpKernel {
   }
 };
 
-template <typename T>
-class SealEncodeOp : public OpKernel {
- public:
-  explicit SealEncodeOp(OpKernelConstruction* context) : OpKernel(context) {}
-
-  void Compute(OpKernelContext* ctx) override {
-    const Tensor& input = ctx->input(0);
-    OP_REQUIRES(
-        ctx, TensorShapeUtils::IsMatrix(input.shape()),
-        InvalidArgument("value expected to be a matrix ",
-                        "but got shape: ", input.shape().DebugString()));
-
-    // TODO(justin1121): this only temporary until we figure out the best way to
-    // encode large number of elements: the encoder can only handle
-    // kPolyModulusDegree / 2 at a time or maybe in total for each encoder?
-    // something to figure out
-    OP_REQUIRES(
-        ctx, input.NumElements() <= kPolyModulusDegree / 2,
-        InvalidArgument("too many elements, must be less than or equal to ",
-                        kPolyModulusDegree / 2));
-
-    Tensor* val;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &val));
-
-    auto context = SetParams();
-
-    PlainTensor plain(input.dim_size(0), input.dim_size(1));
-
-    seal::CKKSEncoder encoder(context);
-
-    auto data = input.flat<T>().data();
-    auto size = input.flat<T>().size();
-
-    // SEAL only takes doubles so cast to that
-    // TODO(justin1121): can we get rid of this nasty copy?!
-    encoder.encode(std::vector<double>(data, data + size), kScale, plain.value);
-
-    val->scalar<Variant>()() = std::move(plain);
-  }
-};
-
-template <typename T>
-class SealDecodeOp : public OpKernel {
- public:
-  explicit SealDecodeOp(OpKernelConstruction* context) : OpKernel(context) {}
-
-  void Compute(OpKernelContext* ctx) override {
-    const PlainTensor* val = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &val));
-
-    auto output_shape = TensorShape{val->rows(), val->cols()};
-
-    Tensor* output;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, output_shape, &output));
-
-    auto context = SetParams();
-
-    seal::CKKSEncoder encoder(context);
-
-    std::vector<double> result;
-    encoder.decode(val->value, result);
-
-    T* data = output->flat<T>().data();
-    size_t size = output->flat<T>().size();
-
-    // SEAL only returns doubles so implicitly cast back to T here, e.g. float
-    std::copy_n(result.begin(), size, data);
-  }
-};
-
 class SealAddOp : public OpKernel {
  public:
   explicit SealAddOp(OpKernelConstruction* context) : OpKernel(context) {}
@@ -256,6 +186,7 @@ class SealAddOp : public OpKernel {
   }
 };
 
+template <typename T>
 class SealAddPlainOp : public OpKernel {
  public:
   explicit SealAddPlainOp(OpKernelConstruction* context) : OpKernel(context) {}
@@ -263,46 +194,46 @@ class SealAddPlainOp : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
     const CipherTensor* a = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &a));
-
-    const PlainTensor* b = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &b));
+    const Tensor& b = ctx->input(1);
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
     auto context = SetParams();
 
+    seal::CKKSEncoder encoder(context);
+
+    auto b_data = b.flat<T>().data();
+    auto b_size = b.flat<T>().size();
+    seal::Plaintext plain;
+    encoder.encode(std::vector<double>(b_data, b_data + b_size), kScale, plain);
+
     CipherTensor res(*a);
 
     seal::Evaluator evaluator(context);
 
-    evaluator.add_plain(a->value, b->value, res.value);
+    evaluator.add_plain(a->value, plain, res.value);
 
     output->scalar<Variant>()() = std::move(res);
   }
 };
 
 // Register the CPU kernels.
-#define REGISTER_CPU(T)                                                  \
-  REGISTER_KERNEL_BUILDER(                                               \
-      Name("SealEncrypt").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
-      SealEncryptOp<T>);                                                 \
-  REGISTER_KERNEL_BUILDER(                                               \
-      Name("SealDecrypt").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
-      SealDecryptOp<T>);                                                 \
-  REGISTER_KERNEL_BUILDER(                                               \
-      Name("SealEncode").Device(DEVICE_CPU).TypeConstraint<T>("dtype"),  \
-      SealEncodeOp<T>);                                                  \
-  REGISTER_KERNEL_BUILDER(                                               \
-      Name("SealDecode").Device(DEVICE_CPU).TypeConstraint<T>("dtype"),  \
-      SealDecodeOp<T>);
+#define REGISTER_GENERIC_OPS(T)                                           \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("SealEncrypt").Device(DEVICE_CPU).TypeConstraint<T>("dtype"),  \
+      SealEncryptOp<T>);                                                  \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("SealDecrypt").Device(DEVICE_CPU).TypeConstraint<T>("dtype"),  \
+      SealDecryptOp<T>);                                                  \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("SealAddPlain").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
+      SealAddPlainOp<T>);
 
-REGISTER_CPU(float);
-REGISTER_CPU(double);
+REGISTER_GENERIC_OPS(float);
+REGISTER_GENERIC_OPS(double);
 
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
-REGISTER_KERNEL_BUILDER(Name("SealAddPlain").Device(DEVICE_CPU),
-                        SealAddPlainOp);
 
 }  // namespace tf_seal

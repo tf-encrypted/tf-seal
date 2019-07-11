@@ -13,12 +13,12 @@
 
 #include "seal/seal.h"
 
+namespace tf_seal {
+
 using tensorflow::VariantTensorData;
 
 using seal::PublicKey;
 using seal::SecretKey;
-
-namespace tf_seal {
 
 class PublicKeyVariant {
  public:

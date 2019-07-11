@@ -13,12 +13,12 @@
 
 #include "seal/seal.h"
 
+namespace tf_seal {
+
 using tensorflow::VariantTensorData;
 
 using seal::Ciphertext;
 using seal::Plaintext;
-
-namespace tf_seal {
 
 class SealTensor {
  public:
@@ -58,19 +58,6 @@ class CipherTensor : public SealTensor {
   std::string DebugString() const { return "CipherTensor"; }
 
   Ciphertext value;
-};
-
-class PlainTensor : public SealTensor {
- public:
-  using SealTensor::SealTensor;
-
-  PlainTensor(const PlainTensor& other);
-
-  static const char kTypeName[];
-
-  std::string DebugString() const { return "PlainTensor"; }
-
-  Plaintext value;
 };
 
 }  // namespace tf_seal

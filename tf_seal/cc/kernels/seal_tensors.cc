@@ -22,9 +22,4 @@ const char CipherTensor::kTypeName[] = "CipherTensor";
 CipherTensor::CipherTensor(const CipherTensor& other)
     : SealTensor(other), value(other.value) {}
 
-const char PlainTensor::kTypeName[] = "PlainTensor";
-
-PlainTensor::PlainTensor(const PlainTensor& other)
-    : SealTensor(other), value(other.value) {}
-
 }  // namespace tf_seal

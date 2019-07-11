@@ -14,21 +14,9 @@ REGISTER_OP("SealEncrypt")
     .SetIsStateful();
 
 REGISTER_OP("SealDecrypt")
-    .Attr("dtype: {float, double}")
+    .Attr("dtype: {float32, float64}")
     .Input("val: variant")
     .Input("key: variant")
-    .Output("out: dtype")
-    .SetIsStateful();
-
-REGISTER_OP("SealEncode")
-    .Attr("dtype: {float32, float64}")
-    .Input("in: dtype")
-    .Output("val: variant")
-    .SetIsStateful();
-
-REGISTER_OP("SealDecode")
-    .Attr("dtype: {float, double}")
-    .Input("val: variant")
     .Output("out: dtype")
     .SetIsStateful();
 
@@ -39,7 +27,8 @@ REGISTER_OP("SealAdd")
     .SetIsStateful();
 
 REGISTER_OP("SealAddPlain")
+    .Attr("dtype: {float32, float64}")
     .Input("a: variant")
-    .Input("b: variant")
+    .Input("b: dtype")
     .Output("out: variant")
     .SetIsStateful();
