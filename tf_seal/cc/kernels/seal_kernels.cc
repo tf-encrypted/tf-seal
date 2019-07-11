@@ -55,6 +55,20 @@ std::shared_ptr<seal::SEALContext> SetParams() {
   return seal::SEALContext::Create(parms);
 }
 
+void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
+                     std::shared_ptr<seal::Evaluator> evaluator, const Ciphertext& a,
+                     const Ciphertext& to_rescale,
+                     Ciphertext& dest) {
+  auto a_index = context->get_context_data(a.parms_id())->chain_index();
+  auto rescale_index = context->get_context_data(to_rescale.parms_id())->chain_index();
+
+  if(a_index < rescale_index) {
+    evaluator->mod_switch_to(to_rescale, a.parms_id(), dest);
+  } else {
+    dest = to_rescale;
+  }
+}
+
 class SealKeyGenOp : public OpKernel {
  public:
   explicit SealKeyGenOp(OpKernelConstruction* context) : OpKernel(context) {}
@@ -66,12 +80,16 @@ class SealKeyGenOp : public OpKernel {
     Tensor* out1;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
 
+    Tensor* out2;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(2, TensorShape{}, &out2));
+
     auto context = SetParams();
 
     seal::KeyGenerator gen(context);
 
     out0->scalar<Variant>()() = PublicKeyVariant(gen.public_key());
     out1->scalar<Variant>()() = SecretKeyVariant(gen.secret_key());
+    out2->scalar<Variant>()() = RelinKeyVariant(gen.relin_keys());
   }
 };
 
@@ -178,9 +196,15 @@ class SealAddOp : public OpKernel {
 
     CipherTensor res(*a);
 
-    seal::Evaluator evaluator(context);
+    auto evaluator = std::make_shared<seal::Evaluator>(context);
 
-    evaluator.add(a->value, b->value, res.value);
+    Ciphertext new_b;
+    ModSwitchIfNeeded(context, evaluator, a->value, b->value, new_b);
+
+    Ciphertext new_a;
+    ModSwitchIfNeeded(context, evaluator,  new_b, a->value, new_a);
+
+    evaluator->add(new_a, new_b, res.value);
 
     output->scalar<Variant>()() = std::move(res);
   }
@@ -212,7 +236,82 @@ class SealAddPlainOp : public OpKernel {
 
     seal::Evaluator evaluator(context);
 
+    evaluator.mod_switch_to_inplace(plain, a->value.parms_id());
+
     evaluator.add_plain(a->value, plain, res.value);
+
+    output->scalar<Variant>()() = std::move(res);
+  }
+};
+
+class SealMulOp : public OpKernel {
+ public:
+  explicit SealMulOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* ctx) override {
+    const CipherTensor* a = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &a));
+
+    const CipherTensor* b = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &b));
+
+    const RelinKeyVariant* relin_key = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &relin_key));
+
+    Tensor* output;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
+
+    auto context = SetParams();
+
+    CipherTensor res(*a);
+
+    auto evaluator = std::make_shared<seal::Evaluator>(context);
+
+    Ciphertext new_b;
+    ModSwitchIfNeeded(context, evaluator, a->value, b->value, new_b);
+
+    Ciphertext new_a;
+    ModSwitchIfNeeded(context, evaluator,  new_b, a->value, new_a);
+
+    evaluator->multiply(new_a, new_b, res.value);
+    evaluator->relinearize_inplace(res.value, relin_key->key);
+    evaluator->rescale_to_next_inplace(res.value);
+
+    output->scalar<Variant>()() = std::move(res);
+  }
+};
+
+template <typename T>
+class SealMulPlainOp : public OpKernel {
+ public:
+  explicit SealMulPlainOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* ctx) override {
+    const CipherTensor* a = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &a));
+
+    const Tensor& b = ctx->input(1);
+
+    Tensor* output;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
+
+    auto context = SetParams();
+
+    seal::CKKSEncoder encoder(context);
+
+    auto b_data = b.flat<T>().data();
+    auto b_size = b.flat<T>().size();
+    seal::Plaintext plain;
+    encoder.encode(std::vector<double>(b_data, b_data + b_size), kScale, plain);
+
+    CipherTensor res(*a);
+
+    seal::Evaluator evaluator(context);
+
+    evaluator.mod_switch_to_inplace(plain, a->value.parms_id());
+
+    evaluator.multiply_plain(a->value, plain, res.value);
+    evaluator.rescale_to_next_inplace(res.value);
 
     output->scalar<Variant>()() = std::move(res);
   }
@@ -228,12 +327,17 @@ class SealAddPlainOp : public OpKernel {
       SealDecryptOp<T>);                                                  \
   REGISTER_KERNEL_BUILDER(                                                \
       Name("SealAddPlain").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
-      SealAddPlainOp<T>);
+      SealAddPlainOp<T>);                                                 \
+  REGISTER_KERNEL_BUILDER(                                                \
+      Name("SealMulPlain").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
+      SealMulPlainOp<T>);
 
 REGISTER_GENERIC_OPS(float);
 REGISTER_GENERIC_OPS(double);
 
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
+REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);
+
 
 }  // namespace tf_seal

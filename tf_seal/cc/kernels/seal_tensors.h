@@ -18,7 +18,6 @@ namespace tf_seal {
 using tensorflow::VariantTensorData;
 
 using seal::Ciphertext;
-using seal::Plaintext;
 
 class SealTensor {
  public:

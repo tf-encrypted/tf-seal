@@ -4,6 +4,7 @@
 REGISTER_OP("SealKeyGen")
     .Output("pub_key: variant")
     .Output("sec_key: variant")
+    .Output("relin_key: variant")
     .SetIsStateful();
 
 REGISTER_OP("SealEncrypt")
@@ -27,6 +28,20 @@ REGISTER_OP("SealAdd")
     .SetIsStateful();
 
 REGISTER_OP("SealAddPlain")
+    .Attr("dtype: {float32, float64}")
+    .Input("a: variant")
+    .Input("b: dtype")
+    .Output("out: variant")
+    .SetIsStateful();
+
+REGISTER_OP("SealMul")
+    .Input("a: variant")
+    .Input("b: variant")
+    .Input("relin_key: variant")
+    .Output("out: variant")
+    .SetIsStateful();
+
+REGISTER_OP("SealMulPlain")
     .Attr("dtype: {float32, float64}")
     .Input("a: variant")
     .Input("b: dtype")
