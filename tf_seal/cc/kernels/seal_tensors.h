@@ -1,5 +1,5 @@
-#ifndef TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
-#define TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
+#ifndef TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_
+#define TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_
 
 #include <string>
 
@@ -13,19 +13,23 @@
 
 #include "seal/seal.h"
 
+namespace tf_seal {
+
 using tensorflow::VariantTensorData;
 
 using seal::Ciphertext;
-using seal::PublicKey;
-using seal::SecretKey;
+using seal::Plaintext;
 
-namespace tf_seal {
-
-struct SealTensor {
+class SealTensor {
+ public:
   SealTensor(int rows, int cols) : _rows(rows), _cols(cols) {}
   SealTensor(const SealTensor& other);
 
+  // needs a virtual method for the class to be polymorphic
+  virtual ~SealTensor() = default;
+
   static const char kTypeName[];
+
   std::string TypeName() const { return kTypeName; }
 
   void Encode(VariantTensorData* data) const;
@@ -38,17 +42,24 @@ struct SealTensor {
 
   int cols() const { return _cols; }
 
-  Ciphertext value;
-
-  // TODO(justin1121) Keys should probably be in their own variant
-  SecretKey sec_key;
-  PublicKey pub_key;
-
  private:
   int _rows;
   int _cols;
 };
 
+class CipherTensor : public SealTensor {
+ public:
+  using SealTensor::SealTensor;
+
+  CipherTensor(const CipherTensor& other);
+
+  static const char kTypeName[];
+
+  std::string DebugString() const { return "CipherTensor"; }
+
+  Ciphertext value;
+};
+
 }  // namespace tf_seal
 
-#endif  // TF_SEAL_CC_KERNELS_SEAL_TENSOR_H_
+#endif  // TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_

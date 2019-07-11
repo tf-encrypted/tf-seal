@@ -6,3 +6,6 @@ seal_ops = load_library.load_op_library(op_lib_file)
 
 seal_encrypt = seal_ops.seal_encrypt
 seal_decrypt = seal_ops.seal_decrypt
+seal_add = seal_ops.seal_add
+seal_add_plain = seal_ops.seal_add_plain
+seal_key_gen = seal_ops.seal_key_gen
