@@ -56,14 +56,14 @@ std::shared_ptr<seal::SEALContext> SetParams() {
 }
 
 void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
-                     std::shared_ptr<seal::Evaluator> evaluator, const Ciphertext& a,
+                      seal::Evaluator& evaluator, const Ciphertext& a,
                      const Ciphertext& to_rescale,
                      Ciphertext& dest) {
   auto a_index = context->get_context_data(a.parms_id())->chain_index();
   auto rescale_index = context->get_context_data(to_rescale.parms_id())->chain_index();
 
   if(a_index < rescale_index) {
-    evaluator->mod_switch_to(to_rescale, a.parms_id(), dest);
+    evaluator.mod_switch_to(to_rescale, a.parms_id(), dest);
   } else {
     dest = to_rescale;
   }
@@ -196,7 +196,7 @@ class SealAddOp : public OpKernel {
 
     CipherTensor res(*a);
 
-    auto evaluator = std::make_shared<seal::Evaluator>(context);
+    seal::Evaluator evaluator(context);
 
     Ciphertext new_b;
     ModSwitchIfNeeded(context, evaluator, a->value, b->value, new_b);
@@ -204,7 +204,7 @@ class SealAddOp : public OpKernel {
     Ciphertext new_a;
     ModSwitchIfNeeded(context, evaluator,  new_b, a->value, new_a);
 
-    evaluator->add(new_a, new_b, res.value);
+    evaluator.add(new_a, new_b, res.value);
 
     output->scalar<Variant>()() = std::move(res);
   }
@@ -265,7 +265,7 @@ class SealMulOp : public OpKernel {
 
     CipherTensor res(*a);
 
-    auto evaluator = std::make_shared<seal::Evaluator>(context);
+    seal::Evaluator evaluator(context);
 
     Ciphertext new_b;
     ModSwitchIfNeeded(context, evaluator, a->value, b->value, new_b);
@@ -273,9 +273,9 @@ class SealMulOp : public OpKernel {
     Ciphertext new_a;
     ModSwitchIfNeeded(context, evaluator,  new_b, a->value, new_a);
 
-    evaluator->multiply(new_a, new_b, res.value);
-    evaluator->relinearize_inplace(res.value, relin_key->key);
-    evaluator->rescale_to_next_inplace(res.value);
+    evaluator.multiply(new_a, new_b, res.value);
+    evaluator.relinearize_inplace(res.value, relin_key->keys);
+    evaluator.rescale_to_next_inplace(res.value);
 
     output->scalar<Variant>()() = std::move(res);
   }

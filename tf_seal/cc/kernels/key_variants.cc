@@ -29,7 +29,7 @@ bool SecretKeyVariant::Decode(const VariantTensorData& data) {
 }
 
 RelinKeyVariant::RelinKeyVariant(const RelinKeyVariant& other)
-    : key(other.key) {}
+    : keys(other.keys) {}
 
 void RelinKeyVariant::Encode(VariantTensorData* data) const {
   // TODO(justin1121) implement this for networking

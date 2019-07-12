@@ -59,7 +59,7 @@ class SecretKeyVariant {
 
 class RelinKeyVariant {
  public:
-  explicit RelinKeyVariant(RelinKeys key) : key(key) {}
+  explicit RelinKeyVariant(RelinKeys keys) : keys(keys) {}
   RelinKeyVariant(const RelinKeyVariant& other);
 
   static const char kTypeName[];
@@ -72,7 +72,7 @@ class RelinKeyVariant {
 
   std::string DebugString() const { return "RelinKeyVariant"; }
 
-  RelinKeys key;
+  RelinKeys keys;
 };
 
 }  // namespace tf_seal
