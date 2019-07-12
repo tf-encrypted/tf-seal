@@ -18,6 +18,7 @@ namespace tf_seal {
 using tensorflow::VariantTensorData;
 
 using seal::PublicKey;
+using seal::RelinKeys;
 using seal::SecretKey;
 
 class PublicKeyVariant {
@@ -54,6 +55,24 @@ class SecretKeyVariant {
   std::string DebugString() const { return "SecretKeyVariant"; }
 
   SecretKey key;
+};
+
+class RelinKeyVariant {
+ public:
+  explicit RelinKeyVariant(RelinKeys keys) : keys(keys) {}
+  RelinKeyVariant(const RelinKeyVariant& other);
+
+  static const char kTypeName[];
+
+  std::string TypeName() const { return kTypeName; }
+
+  void Encode(VariantTensorData* data) const;
+
+  bool Decode(const VariantTensorData& data);
+
+  std::string DebugString() const { return "RelinKeyVariant"; }
+
+  RelinKeys keys;
 };
 
 }  // namespace tf_seal

@@ -28,7 +28,20 @@ bool SecretKeyVariant::Decode(const VariantTensorData& data) {
   return true;
 }
 
+RelinKeyVariant::RelinKeyVariant(const RelinKeyVariant& other)
+    : keys(other.keys) {}
+
+void RelinKeyVariant::Encode(VariantTensorData* data) const {
+  // TODO(justin1121) implement this for networking
+}
+
+bool RelinKeyVariant::Decode(const VariantTensorData& data) {
+  // TODO(justin1121) implement this for networking
+  return true;
+}
+
 const char PublicKeyVariant::kTypeName[] = "PublicKeyVariant";
 const char SecretKeyVariant::kTypeName[] = "SecretKeyVariant";
+const char RelinKeyVariant::kTypeName[] = "RelinKeyVariant";
 
 }  // namespace tf_seal
