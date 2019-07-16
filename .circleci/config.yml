@@ -34,6 +34,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
+            export PATH=$PATH:/root/bin
             make clean
             make test
   build-macos:
