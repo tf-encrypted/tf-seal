@@ -55,9 +55,8 @@ std::shared_ptr<seal::SEALContext> SetParams() {
 }
 
 void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
-                       Evaluator* evaluator,
-                       const Ciphertext& a, const Ciphertext& to_mod,
-                       Ciphertext* dest) {
+                       Evaluator* evaluator, const Ciphertext& a,
+                       const Ciphertext& to_mod, Ciphertext* dest) {
   auto a_index = context->get_context_data(a.parms_id())->chain_index();
   auto mod_index = context->get_context_data(to_mod.parms_id())->chain_index();
 
@@ -70,7 +69,11 @@ void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
 
 class SealKeyGenOp : public OpKernel {
  public:
-  explicit SealKeyGenOp(OpKernelConstruction* context) : OpKernel(context) {}
+  explicit SealKeyGenOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_public", &gen_public));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_relin", &gen_relin));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_galois", &gen_galois));
+  }
 
   void Compute(OpKernelContext* ctx) override {
     Tensor* out0;
@@ -79,21 +82,31 @@ class SealKeyGenOp : public OpKernel {
     Tensor* out1;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
 
-    Tensor* out2;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(2, TensorShape{}, &out2));
-
-    Tensor* out3;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(3, TensorShape{}, &out3));
-
     auto context = SetParams();
 
     seal::KeyGenerator gen(context);
 
-    out0->scalar<Variant>()() = PublicKeyVariant(gen.public_key());
+    PublicKeysVariant pub_keys;
+
+    if(gen_public) {
+      pub_keys.public_key = gen.public_key();
+    }
+
+    if(gen_relin) {
+      pub_keys.relin_keys = gen.relin_keys();
+    }
+
+    if(gen_galois) {
+      pub_keys.galois_keys = gen.galois_keys();
+    }
+
+    out0->scalar<Variant>()() = std::move(pub_keys);
     out1->scalar<Variant>()() = SecretKeyVariant(gen.secret_key());
-    out2->scalar<Variant>()() = RelinKeyVariant(gen.relin_keys());
-    out3->scalar<Variant>()() = GaloisKeyVariant(gen.galois_keys());
   }
+
+  bool gen_public = true;
+  bool gen_relin = false;
+  bool gen_galois = false;
 };
 
 template <typename T>
@@ -117,7 +130,7 @@ class SealEncryptOp : public OpKernel {
         InvalidArgument("too many elements, must be less than or equal to ",
                         kPolyModulusDegree / 2));
 
-    const PublicKeyVariant* key = nullptr;
+    const PublicKeysVariant* key = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
 
     Tensor* val;
@@ -127,7 +140,7 @@ class SealEncryptOp : public OpKernel {
 
     CipherTensor cipher(input.dim_size(0), input.dim_size(1));
 
-    seal::Encryptor encryptor(context, key->key);
+    seal::Encryptor encryptor(context, key->public_key);
     seal::CKKSEncoder encoder(context);
 
     auto data = input.flat<T>().data();
@@ -278,8 +291,11 @@ class SealMulOp : public OpKernel {
     const CipherTensor* b = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &b));
 
-    const RelinKeyVariant* relin_key = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &relin_key));
+    const PublicKeysVariant* pub_keys = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &pub_keys));
+
+    OP_REQUIRES(ctx, pub_keys->relin_keys.data().size() >= 1,
+                InvalidArgument("No relin keys found for seal mul op"));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
@@ -298,7 +314,7 @@ class SealMulOp : public OpKernel {
       ModSwitchIfNeeded(context, &evaluator, new_b, a->value[i], &new_a);
 
       evaluator.multiply(new_a, new_b, res.value[i]);
-      evaluator.relinearize_inplace(res.value[i], relin_key->keys);
+      evaluator.relinearize_inplace(res.value[i], pub_keys->relin_keys);
       evaluator.rescale_to_next_inplace(res.value[i]);
     }
 
@@ -366,11 +382,14 @@ class SealMatMulOp : public OpKernel {
                 InvalidArgument("Expected a columns to equal b columns saw a ",
                                 a->cols(), " and b ", b->cols()));
 
-    const RelinKeyVariant* relin_keys = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &relin_keys));
+    const PublicKeysVariant* pub_keys = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &pub_keys));
 
-    const GaloisKeyVariant* galois_keys = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 3, &galois_keys));
+    OP_REQUIRES(ctx, pub_keys->relin_keys.data().size() >= 1,
+                InvalidArgument("No relin keys found for seal matmul op"));
+
+    OP_REQUIRES(ctx, pub_keys->galois_keys.data().size() >= 1,
+                InvalidArgument("No galois keys found for seal matmul op"));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
@@ -382,11 +401,11 @@ class SealMatMulOp : public OpKernel {
 
     seal::Evaluator evaluator(context);
 
-    matmul(context, &evaluator, *a, *b, &res, relin_keys->keys,
-           galois_keys->keys);
+    matmul(context, &evaluator, *a, *b, &res, pub_keys->relin_keys,
+           pub_keys->galois_keys);
 
     for (int i = 0; i < rows; i++) {
-      evaluator.relinearize_inplace(res.value[i], relin_keys->keys);
+      evaluator.relinearize_inplace(res.value[i], pub_keys->relin_keys);
       evaluator.rescale_to_next_inplace(res.value[i]);
     }
 
@@ -410,8 +429,11 @@ class SealMatMulPlainOp : public OpKernel {
                 InvalidArgument("Expected a columns to equal b columns saw a ",
                                 a->cols(), " and b ", b.dim_size(1)));
 
-    const GaloisKeyVariant* galois_keys = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &galois_keys));
+    const PublicKeysVariant* pub_keys = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &pub_keys));
+
+    OP_REQUIRES(ctx, pub_keys->galois_keys.data().size() >= 1,
+                InvalidArgument("No galois keys found for seal matmul plain op"));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
@@ -424,7 +446,7 @@ class SealMatMulPlainOp : public OpKernel {
 
     seal::Evaluator evaluator(context);
 
-    matmul_plain<T>(context, &evaluator, *a, b, &res, galois_keys->keys);
+    matmul_plain<T>(context, &evaluator, *a, b, &res, pub_keys->galois_keys);
 
     for (int i = 0; i < a->rows(); i++) {
       evaluator.rescale_to_next_inplace(res.value[i]);
