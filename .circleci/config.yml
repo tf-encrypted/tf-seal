@@ -73,16 +73,9 @@ jobs:
 
 workflows:
   version: 2
-  build-linux-macos:
+  build-linux:
     jobs:
       - build-linux:
-          filters:
-            tags:
-              # In order for the 'deploy' job to run, we must first kick off
-              # the build job on all tags. By default, Circle CI only kicks off
-              # builds on tags if a filter is defined.
-              only: /^(?:[0-9]+)\.(?:[0-9]+)\.(?:[0-9]+)(?:(\-rc[0-9]+)?)$/
-      - build-macos:
           filters:
             tags:
               # In order for the 'deploy' job to run, we must first kick off
