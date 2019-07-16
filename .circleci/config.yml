@@ -10,16 +10,17 @@ jobs:
       - run:
           name: install deps
           command: |
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            apt-get install pkg-config zip g++ zlib1g-dev unzip python3 cmake curl
+            curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
             bash Miniconda3-latest-Linux-x86_64.sh -b -f
             ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
             . venv/bin/activate
             apt-get install pkg-config zip g++ zlib1g-dev unzip python3 cmake
-            wget https://github.com/bazelbuild/bazel/releases/download/0.21.0/bazel-0.21.0-installer-linux-x86_64.sh
+            curl -O https://github.com/bazelbuild/bazel/releases/download/0.21.0/bazel-0.21.0-installer-linux-x86_64.sh
             bash bazel-0.21.0-installer-linux-x86_64.sh --user
 
-            wget https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
+            curl -O https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
             tar -xf 3.3.1.tar.gz
 
             cd SEAL-3.3.1/native/src
@@ -27,7 +28,7 @@ jobs:
             make
             make install
 
-            wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+            curl -O https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
             pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
       - run:
           name: run tests
