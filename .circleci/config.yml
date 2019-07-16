@@ -10,13 +10,13 @@ jobs:
       - run:
           name: install deps
           command: |
-            apt-get install pkg-config zip g++ zlib1g-dev unzip python3 cmake curl
+            apt update
+            apt install -y pkg-config zip g++ zlib1g-dev unzip python3 cmake curl
             curl -OL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
             bash Miniconda3-latest-Linux-x86_64.sh -b -f
             ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
             . venv/bin/activate
-            apt-get install pkg-config zip g++ zlib1g-dev unzip python3 cmake
             curl -OL https://github.com/bazelbuild/bazel/releases/download/0.21.0/bazel-0.21.0-installer-linux-x86_64.sh
             bash bazel-0.21.0-installer-linux-x86_64.sh --user
 
@@ -38,7 +38,7 @@ jobs:
             make test
   build-macos:
     macos:
-        xcode: "10.0.0"
+        xcode: "10.2.1"
     working_directory: ~/repo
     steps:
       - checkout
