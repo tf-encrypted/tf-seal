@@ -39,7 +39,7 @@ jobs:
             make test
   build-macos:
     macos:
-        xcode: "10.2.1"
+        xcode: "10.1"
     working_directory: ~/repo
     steps:
       - checkout
