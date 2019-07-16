@@ -2,6 +2,7 @@
 #define TF_SEAL_CC_KERNELS_SEAL_TENSORS_H_
 
 #include <string>
+#include <vector>
 
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -19,13 +20,12 @@ using tensorflow::VariantTensorData;
 
 using seal::Ciphertext;
 
-class SealTensor {
+class CipherTensor {
  public:
-  SealTensor(int rows, int cols) : _rows(rows), _cols(cols) {}
-  SealTensor(const SealTensor& other);
+  CipherTensor(int rows, int cols) : value(rows), _rows(rows), _cols(cols) {}
 
-  // needs a virtual method for the class to be polymorphic
-  virtual ~SealTensor() = default;
+  CipherTensor(const CipherTensor& other)
+      : value(other.value), _rows(other._rows), _cols(other._cols) {}
 
   static const char kTypeName[];
 
@@ -35,28 +35,16 @@ class SealTensor {
 
   bool Decode(const VariantTensorData& data);
 
-  std::string DebugString() const { return "SealTensor"; }
+  std::string DebugString() const { return "CipherTensor"; }
 
   int rows() const { return _rows; }
-
   int cols() const { return _cols; }
+
+  std::vector<Ciphertext> value;
 
  private:
   int _rows;
   int _cols;
-};
-
-class CipherTensor : public SealTensor {
- public:
-  using SealTensor::SealTensor;
-
-  CipherTensor(const CipherTensor& other);
-
-  static const char kTypeName[];
-
-  std::string DebugString() const { return "CipherTensor"; }
-
-  Ciphertext value;
 };
 
 }  // namespace tf_seal
