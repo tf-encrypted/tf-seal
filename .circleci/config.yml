@@ -10,7 +10,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
             bash Miniconda3-latest-Linux-x86_64.sh -b -f
             ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
@@ -44,7 +44,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
             bash Miniconda3-latest-MacOSX-x86_64.sh -b -f
             ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
