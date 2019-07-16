@@ -11,3 +11,5 @@ seal_add_plain = seal_ops.seal_add_plain
 seal_mul = seal_ops.seal_mul
 seal_mul_plain = seal_ops.seal_mul_plain
 seal_key_gen = seal_ops.seal_key_gen
+seal_mat_mul = seal_ops.seal_mat_mul
+seal_mat_mul_plain = seal_ops.seal_mat_mul_plain
