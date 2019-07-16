@@ -55,15 +55,16 @@ std::shared_ptr<seal::SEALContext> SetParams() {
 }
 
 void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
-                       seal::Evaluator& evaluator, const Ciphertext& a,
-                       const Ciphertext& to_mod, Ciphertext& dest) {
+                       Evaluator* evaluator,
+                       const Ciphertext& a, const Ciphertext& to_mod,
+                       Ciphertext* dest) {
   auto a_index = context->get_context_data(a.parms_id())->chain_index();
   auto mod_index = context->get_context_data(to_mod.parms_id())->chain_index();
 
   if (a_index < mod_index) {
-    evaluator.mod_switch_to(to_mod, a.parms_id(), dest);
+    evaluator->mod_switch_to(to_mod, a.parms_id(), *dest);
   } else {
-    dest = to_mod;
+    *dest = to_mod;
   }
 }
 
@@ -207,14 +208,14 @@ class SealAddOp : public OpKernel {
 
     CipherTensor res(*a);
 
-    seal::Evaluator evaluator(context);
+    Evaluator evaluator(context);
 
     for (int i = 0; i < a->rows(); i++) {
       Ciphertext new_b;
-      ModSwitchIfNeeded(context, evaluator, a->value[i], b->value[i], new_b);
+      ModSwitchIfNeeded(context, &evaluator, a->value[i], b->value[i], &new_b);
 
       Ciphertext new_a;
-      ModSwitchIfNeeded(context, evaluator, new_b, a->value[i], new_a);
+      ModSwitchIfNeeded(context, &evaluator, new_b, a->value[i], &new_a);
 
       // For add operations the scale needs to be exact, set that here
       new_b.scale() = new_a.scale();
@@ -287,14 +288,14 @@ class SealMulOp : public OpKernel {
 
     CipherTensor res(*a);
 
-    seal::Evaluator evaluator(context);
+    Evaluator evaluator(context);
 
     for (int i = 0; i < a->rows(); i++) {
       Ciphertext new_b;
-      ModSwitchIfNeeded(context, evaluator, a->value[i], b->value[i], new_b);
+      ModSwitchIfNeeded(context, &evaluator, a->value[i], b->value[i], &new_b);
 
       Ciphertext new_a;
-      ModSwitchIfNeeded(context, evaluator, new_b, a->value[i], new_a);
+      ModSwitchIfNeeded(context, &evaluator, new_b, a->value[i], &new_a);
 
       evaluator.multiply(new_a, new_b, res.value[i]);
       evaluator.relinearize_inplace(res.value[i], relin_key->keys);
@@ -381,7 +382,7 @@ class SealMatMulOp : public OpKernel {
 
     seal::Evaluator evaluator(context);
 
-    matmul(context, evaluator, *a, *b, &res, relin_keys->keys,
+    matmul(context, &evaluator, *a, *b, &res, relin_keys->keys,
            galois_keys->keys);
 
     for (int i = 0; i < rows; i++) {
@@ -423,7 +424,7 @@ class SealMatMulPlainOp : public OpKernel {
 
     seal::Evaluator evaluator(context);
 
-    matmul_plain<T>(context, evaluator, *a, b, &res, galois_keys->keys);
+    matmul_plain<T>(context, &evaluator, *a, b, &res, galois_keys->keys);
 
     for (int i = 0; i < a->rows(); i++) {
       evaluator.rescale_to_next_inplace(res.value[i]);

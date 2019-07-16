@@ -26,17 +26,17 @@ const size_t kPolyModulusDegree = pow(2, kPolyModulusDegreePower);
 // Algorithm 4 (FHE.sumslots)
 // from
 // https://bmcmedgenomics.biomedcentral.com/track/pdf/10.1186/s12920-018-0397-z
-void rotate_sum(Evaluator& evaluator, Ciphertext& cipher,
+void rotate_sum(Evaluator* evaluator, Ciphertext* cipher,
                 const GaloisKeys& keys) {
   Ciphertext rotated;
   for (int i = 0; i < kPolyModulusDegreePower - 1; i++) {
-    evaluator.rotate_vector(cipher, pow(2, i), keys, rotated);
-    evaluator.add_inplace(cipher, rotated);
+    evaluator->rotate_vector(*cipher, pow(2, i), keys, rotated);
+    evaluator->add_inplace(*cipher, rotated);
   }
 }
 
 void zero_all_but_first(std::shared_ptr<SEALContext> context,
-                        Evaluator& evaluator, Ciphertext* cipher,
+                        Evaluator* evaluator, Ciphertext* cipher,
                         double scale) {
   CKKSEncoder encoder(context);
 
@@ -48,11 +48,11 @@ void zero_all_but_first(std::shared_ptr<SEALContext> context,
   // is there a way to keep the encoding smaller than 2 ^ 40 for ones and zeros?
   encoder.encode(one_and_zeros, pow(2, 40), plain);
 
-  evaluator.multiply_plain_inplace(*cipher, plain);
+  evaluator->multiply_plain_inplace(*cipher, plain);
 }
 
 // Matmul expects a column major order matrix for tensor b.
-void matmul(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
+void matmul(std::shared_ptr<SEALContext> context, Evaluator* evaluator,
             const CipherTensor& a, const CipherTensor& b, CipherTensor* c,
             const RelinKeys& relin_keys, const GaloisKeys& galois_keys) {
   CKKSEncoder encoder(context);
@@ -65,20 +65,20 @@ void matmul(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
     Plaintext zeros;
     for (int j = 0; j < cols_b; j++) {
       // first multiple row i and column j
-      evaluator.multiply(a.value[i], b.value[j], tmp[j]);
+      evaluator->multiply(a.value[i], b.value[j], tmp[j]);
 
       // relinearize to shrink the cipher size back to 2
-      evaluator.relinearize_inplace(tmp[j], relin_keys);
+      evaluator->relinearize_inplace(tmp[j], relin_keys);
 
       // calculate the sum, the sum will end up in every slot of the cipher
-      rotate_sum(evaluator, tmp[j], galois_keys);
+      rotate_sum(evaluator, &(tmp[j]), galois_keys);
 
       // we only want the sum in one slot so multiple by ones and zeros
       // so that the sum is in the first slot
       zero_all_but_first(context, evaluator, &(tmp[j]), kScale);
 
       // rescale once
-      evaluator.rescale_to_next_inplace(tmp[j]);
+      evaluator->rescale_to_next_inplace(tmp[j]);
 
       // next we need to fill in the final row so we first create temporary
       // cipher with all zeros and set the first element to the first element in
@@ -87,13 +87,13 @@ void matmul(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
         encoder.encode(std::vector<double>(0), tmp[j].parms_id(),
                        tmp[j].scale(), zeros);
 
-        evaluator.add_plain(tmp[j], zeros, c->value[i]);
+        evaluator->add_plain(tmp[j], zeros, c->value[i]);
       } else {
         // for every other element we rotate tmp to the right by j and then add
         // it to the output row
-        evaluator.rotate_vector_inplace(tmp[j], -j, galois_keys);
+        evaluator->rotate_vector_inplace(tmp[j], -j, galois_keys);
 
-        evaluator.add_inplace(c->value[i], tmp[j]);
+        evaluator->add_inplace(c->value[i], tmp[j]);
       }
     }
   }
@@ -101,7 +101,7 @@ void matmul(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
 
 // matmul plain is very similar to the above matmul, see it for more details
 template <typename T>
-void matmul_plain(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
+void matmul_plain(std::shared_ptr<SEALContext> context, Evaluator* evaluator,
                   const CipherTensor& a, const Tensor& b, CipherTensor* c,
                   const GaloisKeys& galois_keys) {
   CKKSEncoder encoder(context);
@@ -119,23 +119,23 @@ void matmul_plain(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
       encoder.encode(
           std::vector<double>(data + (rows_b * j), data + (rows_b * (j + 1))),
           kScale, b_plain);
-      evaluator.multiply_plain(a.value[i], b_plain, tmp[j]);
+      evaluator->multiply_plain(a.value[i], b_plain, tmp[j]);
 
-      rotate_sum(evaluator, tmp[j], galois_keys);
+      rotate_sum(evaluator, &(tmp[j]), galois_keys);
 
       zero_all_but_first(context, evaluator, &(tmp[j]), kScale);
 
-      evaluator.rescale_to_next_inplace(tmp[j]);
+      evaluator->rescale_to_next_inplace(tmp[j]);
 
       if (j == 0) {
         encoder.encode(std::vector<double>(0), tmp[j].parms_id(),
                        tmp[j].scale(), zeros);
 
-        evaluator.add_plain(tmp[j], zeros, c->value[i]);
+        evaluator->add_plain(tmp[j], zeros, c->value[i]);
       } else {
-        evaluator.rotate_vector_inplace(tmp[j], -j, galois_keys);
+        evaluator->rotate_vector_inplace(tmp[j], -j, galois_keys);
 
-        evaluator.add_inplace(c->value[i], tmp[j]);
+        evaluator->add_inplace(c->value[i], tmp[j]);
       }
     }
   }
