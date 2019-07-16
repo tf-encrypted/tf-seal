@@ -4,19 +4,37 @@ TF Seal implements a bridge between Tensorflow and [Microsoft SEAL](https://gith
 
 ## Developer Requirements
 
-TODO Ubuntu instructions
+**Ubuntu**
+
+TODO simplify this, add a bootstrap script to Makefile
+
+We need to install the following software to be able to use TF SEAL.
+
+- Python 3.7
+- Bazel 0.26.1 or greater
+- cmake
+- [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl)
+- Microsoft SEAL
+
+We recommend using [Anaconda](https://www.anaconda.com/distribution/) to set up a Python 3.7 environment. Once Anaconda is installed this can be done with:
+
+```
+$ conda create -n py37 python=3.7
+$ conda activate py37
+```
+
 
 **MacOS**
 
 TODO simplify this, add a bootstrap script to Makefile
 
-Since we can't use a MacOS docker container, setting up a development environment is a little more involved. We need four things:
+We need to install the following software to be able to use TF SEAL.
 
 - Python 3.7
 - Homebrew
-- Bazel 0.15.0 or greater
+- Bazel 0.26.1 or greater
 - cmake
-- [Custom Tensorflow build]()
+- [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl)
 - Microsoft SEAL
 
 We recommend using [Anaconda](https://www.anaconda.com/distribution/) to set up a Python 3.7 environment. Once Anaconda is installed this can be done with:
@@ -43,6 +61,7 @@ $ brew install bazelbuild/tap/bazel
 Install the custom Tensorflow:
 
 ```
+wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 pip install tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 ```
 
@@ -57,14 +76,14 @@ We'll have to build and install Microsoft SEAL.
 Download and extract:
 
 ```
-wget https://github.com/microsoft/SEAL/tree/3.3.0.tar.gz
-tar -xf SEAL-3.3.0.tar.gz
+wget https://github.com/microsoft/SEAL/tree/3.3.1.tar.gz
+tar -xf SEAL-3.3.1.tar.gz
 ```
 
 Build and install:
 
 ```
-cd SEAL-3.3.0/native/src
+cd SEAL-3.3.1/native/src
 cmake .
 make
 sudo make install
