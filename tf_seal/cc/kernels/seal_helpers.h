@@ -64,7 +64,7 @@ void matmul(std::shared_ptr<SEALContext> context, Evaluator& evaluator,
 
     Plaintext zeros;
     for (int j = 0; j < cols_b; j++) {
-      // first multiple row i and column i
+      // first multiple row i and column j
       evaluator.multiply(a.value[i], b.value[j], tmp[j]);
 
       // relinearize to shrink the cipher size back to 2
