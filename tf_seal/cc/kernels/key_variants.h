@@ -17,15 +17,16 @@ namespace tf_seal {
 
 using tensorflow::VariantTensorData;
 
+using seal::KeyGenerator;
 using seal::GaloisKeys;
 using seal::PublicKey;
 using seal::RelinKeys;
 using seal::SecretKey;
 
-class PublicKeyVariant {
+class PublicKeysVariant {
  public:
-  explicit PublicKeyVariant(PublicKey key) : key(key) {}
-  PublicKeyVariant(const PublicKeyVariant& other);
+  PublicKeysVariant() = default;
+  PublicKeysVariant(const PublicKeysVariant& other) = default;
 
   static const char kTypeName[];
 
@@ -37,13 +38,15 @@ class PublicKeyVariant {
 
   std::string DebugString() const { return "PublicKeyVariant"; }
 
-  PublicKey key;
+  PublicKey public_key;
+  RelinKeys relin_keys;
+  GaloisKeys galois_keys;
 };
 
 class SecretKeyVariant {
  public:
   explicit SecretKeyVariant(SecretKey key) : key(key) {}
-  SecretKeyVariant(const SecretKeyVariant& other);
+  SecretKeyVariant(const SecretKeyVariant& other) = default;
 
   static const char kTypeName[];
 
@@ -56,42 +59,6 @@ class SecretKeyVariant {
   std::string DebugString() const { return "SecretKeyVariant"; }
 
   SecretKey key;
-};
-
-class RelinKeyVariant {
- public:
-  explicit RelinKeyVariant(RelinKeys keys) : keys(keys) {}
-  RelinKeyVariant(const RelinKeyVariant& other);
-
-  static const char kTypeName[];
-
-  std::string TypeName() const { return kTypeName; }
-
-  void Encode(VariantTensorData* data) const;
-
-  bool Decode(const VariantTensorData& data);
-
-  std::string DebugString() const { return "RelinKeyVariant"; }
-
-  RelinKeys keys;
-};
-
-class GaloisKeyVariant {
- public:
-  explicit GaloisKeyVariant(GaloisKeys keys) : keys(keys) {}
-  GaloisKeyVariant(const GaloisKeyVariant& other);
-
-  static const char kTypeName[];
-
-  std::string TypeName() const { return kTypeName; }
-
-  void Encode(VariantTensorData* data) const;
-
-  bool Decode(const VariantTensorData& data);
-
-  std::string DebugString() const { return "GaloisKeyVariant"; }
-
-  GaloisKeys keys;
 };
 
 }  // namespace tf_seal

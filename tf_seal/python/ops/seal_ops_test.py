@@ -19,7 +19,7 @@ class SealTest(test.TestCase):
   def test_encrypt_decrypt(self):
     with tf.Session() as sess:
       inp = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
-      pub_key, sec_key, _, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen()
       variant = seal_encrypt(inp, pub_key)
       ans = seal_decrypt(variant, sec_key, tf.float32)
 
@@ -32,7 +32,7 @@ class SealTest(test.TestCase):
 
       ans = a + b
 
-      pub_key, sec_key, _, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen()
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b, pub_key)
@@ -50,7 +50,7 @@ class SealTest(test.TestCase):
 
       ans = a + b
 
-      pub_key, sec_key, _, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen()
 
       a_var = seal_encrypt(a, pub_key)
 
@@ -68,14 +68,14 @@ class SealTest(test.TestCase):
 
       ans = a * b * c
 
-      pub_key, sec_key, relin_key, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen(gen_relin=True)
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b, pub_key)
       c_var = seal_encrypt(c, pub_key)
 
-      tmp = seal_mul(a_var, b_var, relin_key)
-      d_var = seal_mul(tmp, c_var, relin_key)
+      tmp = seal_mul(a_var, b_var, pub_key)
+      d_var = seal_mul(tmp, c_var, pub_key)
 
       d = seal_decrypt(d_var, sec_key, tf.float64)
 
@@ -89,13 +89,13 @@ class SealTest(test.TestCase):
 
       ans = a * b + c
 
-      pub_key, sec_key, relin_key, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen(gen_relin=True)
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b, pub_key)
       c_var = seal_encrypt(c, pub_key)
 
-      tmp = seal_mul(a_var, b_var, relin_key)
+      tmp = seal_mul(a_var, b_var, pub_key)
       d_var = seal_add(tmp, c_var)
 
       d = seal_decrypt(d_var, sec_key, tf.float64)
@@ -109,7 +109,7 @@ class SealTest(test.TestCase):
 
       ans = a * b
 
-      pub_key, sec_key, _, _ = seal_key_gen()
+      pub_key, sec_key = seal_key_gen()
 
       a_var = seal_encrypt(a, pub_key)
 
@@ -126,12 +126,12 @@ class SealTest(test.TestCase):
 
       ans = a.dot(b)
 
-      pub_key, sec_key, relin_key, galois_key = seal_key_gen()
+      pub_key, sec_key = seal_key_gen(gen_relin=True, gen_galois=True)
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b.transpose(), pub_key)
 
-      c_var = seal_mat_mul(a_var, b_var, relin_key, galois_key)
+      c_var = seal_mat_mul(a_var, b_var, pub_key)
 
       c = seal_decrypt(c_var, sec_key, tf.float32)
 
@@ -144,11 +144,11 @@ class SealTest(test.TestCase):
 
       ans = a.dot(b)
 
-      pub_key, sec_key, _, galois_key = seal_key_gen()
+      pub_key, sec_key = seal_key_gen(gen_galois=True)
 
       a_var = seal_encrypt(a, pub_key)
 
-      c_var = seal_mat_mul_plain(a_var, b.transpose(), galois_key)
+      c_var = seal_mat_mul_plain(a_var, b.transpose(), pub_key)
 
       c = seal_decrypt(c_var, sec_key, tf.float32)
 
@@ -162,13 +162,13 @@ class SealTest(test.TestCase):
 
       ans = a.dot(b) + c
 
-      pub_key, sec_key, relin_key, galois_key = seal_key_gen()
+      pub_key, sec_key = seal_key_gen(gen_relin=True, gen_galois=True)
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b.transpose(), pub_key)
       c_var = seal_encrypt(c, pub_key)
 
-      tmp = seal_mat_mul(a_var, b_var, relin_key, galois_key)
+      tmp = seal_mat_mul(a_var, b_var, pub_key)
       d_var = seal_add(tmp, c_var)
 
       d = seal_decrypt(d_var, sec_key, tf.float32)
@@ -180,12 +180,12 @@ class SealTest(test.TestCase):
       a = np.array([[1, 2, 3], [4, 5, 6]], np.float32)
       b = np.array([[1, 2], [3, 4], [5, 6]], np.float32)
 
-      pub_key, _, relin_key, galois_key = seal_key_gen()
+      pub_key, _ = seal_key_gen()
 
       a_var = seal_encrypt(a, pub_key)
       b_var = seal_encrypt(b, pub_key)
 
-      tmp = seal_mat_mul(a_var, b_var, relin_key, galois_key)
+      tmp = seal_mat_mul(a_var, b_var, pub_key)
 
       try:
         sess.run(tmp)
