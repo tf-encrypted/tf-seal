@@ -27,6 +27,8 @@ jobs:
             make
             sudo make install
 
+            wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+            pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
       - run:
           name: run tests
           command: |
