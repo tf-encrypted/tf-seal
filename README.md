@@ -11,10 +11,17 @@ TODO simplify this, add a bootstrap script to Makefile
 We need to install the following software to be able to use TF SEAL.
 
 - Python 3.7
-- Bazel 0.15.0 or greater
+- Bazel 0.26.1 or greater
 - cmake
-- [Custom Tensorflow build]()
+- [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl)
 - Microsoft SEAL
+
+We recommend using [Anaconda](https://www.anaconda.com/distribution/) to set up a Python 3.7 environment. Once Anaconda is installed this can be done with:
+
+```
+$ conda create -n py37 python=3.7
+$ conda activate py37
+```
 
 
 **MacOS**
@@ -25,7 +32,7 @@ We need to install the following software to be able to use TF SEAL.
 
 - Python 3.7
 - Homebrew
-- Bazel 0.15.0 or greater
+- Bazel 0.26.1 or greater
 - cmake
 - [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl)
 - Microsoft SEAL

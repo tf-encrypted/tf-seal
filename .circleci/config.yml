@@ -10,16 +10,17 @@ jobs:
       - run:
           name: install deps
           command: |
-            curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            apt update
+            apt install -y pkg-config zip g++ zlib1g-dev unzip python3 cmake curl
+            curl -OL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
             bash Miniconda3-latest-Linux-x86_64.sh -b -f
-            ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
+            ../miniconda3/bin/conda create -y -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
             . venv/bin/activate
-            apt-get install pkg-config zip g++ zlib1g-dev unzip python3 cmake
-            wget https://github.com/bazelbuild/bazel/releases/download/0.21.0/bazel-0.21.0-installer-linux-x86_64.sh
-            bash bazel-0.21.0-installer-linux-x86_64.sh --user
+            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel-0.26.1-installer-linux-x86_64.sh
+            bash bazel-0.26.1-installer-linux-x86_64.sh --user
 
-            wget https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
+            curl -OL https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
             tar -xf 3.3.1.tar.gz
 
             cd SEAL-3.3.1/native/src
@@ -27,32 +28,33 @@ jobs:
             make
             make install
 
-            wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+            curl -OL https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
             pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
       - run:
           name: run tests
           command: |
             . venv/bin/activate
+            export PATH=$PATH:/root/bin
             make clean
             make test
   build-macos:
     macos:
-        xcode: "10.0.0"
+        xcode: "10.1"
     working_directory: ~/repo
     steps:
       - checkout
       - run:
           name: install deps
           command: |
-            curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            curl -OL https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
             bash Miniconda3-latest-MacOSX-x86_64.sh -b -f
-            ../miniconda3/bin/conda create -n py37 python=3.7 2> /dev/null || true
+            ../miniconda3/bin/conda create -y -n py37 python=3.7 2> /dev/null || true
             ../miniconda3/envs/py37/bin/python -m venv venv
             . venv/bin/activate
             HOMEBREW_NO_AUTO_UPDATE=1 brew tap bazelbuild/tap
             HOMEBREW_NO_AUTO_UPDATE=1 brew install bazelbuild/tap/bazel cmake
 
-            wget https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
+            curl -OL https://github.com/microsoft/SEAL/archive/3.3.1.tar.gz
             tar -xf 3.3.1.tar.gz
 
             cd SEAL-3.3.1/native/src
@@ -60,7 +62,7 @@ jobs:
             make
             make install
 
-            wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
+            curl -OL https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
             pip install tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
       - run:
           name: run tests
@@ -71,16 +73,9 @@ jobs:
 
 workflows:
   version: 2
-  build-linux-macos:
+  build-linux:
     jobs:
       - build-linux:
-          filters:
-            tags:
-              # In order for the 'deploy' job to run, we must first kick off
-              # the build job on all tags. By default, Circle CI only kicks off
-              # builds on tags if a filter is defined.
-              only: /^(?:[0-9]+)\.(?:[0-9]+)\.(?:[0-9]+)(?:(\-rc[0-9]+)?)$/
-      - build-macos:
           filters:
             tags:
               # In order for the 'deploy' job to run, we must first kick off
