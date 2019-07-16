@@ -24,8 +24,7 @@ const size_t kPolyModulusDegreePower = 13;
 const size_t kPolyModulusDegree = pow(2, kPolyModulusDegreePower);
 
 // Algorithm 4 (FHE.sumslots)
-// from
-// https://bmcmedgenomics.biomedcentral.com/track/pdf/10.1186/s12920-018-0397-z
+// from https://eprint.iacr.org/2018/462
 void rotate_sum(Evaluator* evaluator, Ciphertext* cipher,
                 const GaloisKeys& keys) {
   Ciphertext rotated;

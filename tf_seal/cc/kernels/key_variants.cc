@@ -52,9 +52,9 @@ bool GaloisKeyVariant::Decode(const VariantTensorData& data) {
   return true;
 }
 
-const char PublicKeyVariant::kTypeName[] = "PublicKeyVariant";
-const char SecretKeyVariant::kTypeName[] = "SecretKeyVariant";
-const char RelinKeyVariant::kTypeName[] = "RelinKeyVariant";
-const char GaloisKeyVariant::kTypeName[] = "GaloisKeyVariant";
+const char PublicKeyVariant::kTypeName[] = "SealPublicKeyVariant";
+const char SecretKeyVariant::kTypeName[] = "SealSecretKeyVariant";
+const char RelinKeyVariant::kTypeName[] = "SealRelinKeyVariant";
+const char GaloisKeyVariant::kTypeName[] = "SealGaloisKeyVariant";
 
 }  // namespace tf_seal
