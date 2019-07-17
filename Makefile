@@ -16,10 +16,10 @@ clean:
 c++17.tar.gz:
 	wget https://github.com/dropoutlabs/tensorflow/archive/c++17.tar.gz
 
-tensorflow-c-17:
+tensorflow-c-17: c++17.tar.gz
 	tar -xf c++17.tar.gz
 
-tensorflow: c++17.tar.gz tensorflow-c-17
+tensorflow: tensorflow-c-17
 	cd tensorflow-c-17 && echo -e '\n' | TF_ENABLE_XLA=0 TF_NEED_CUDA=0 TF_SET_ANDROID_WORKSPACE=0 \
 	 TF_CONFIGURE_IOS=0 TF_NEED_OPENCL_SYCL=0 TF_DOWNLOAD_CLANG=0 \
 	 TF_NEED_ROCM=0 TF_NEED_MPI=0 ./configure
@@ -28,4 +28,4 @@ tensorflow: c++17.tar.gz tensorflow-c-17
 		//tensorflow/tools/pip_package:build_pip_package
 	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package --nightly_flag pkgs
 
-.PHONY: test fmt lint clean
+.PHONY: test fmt lint clean tensorflow
