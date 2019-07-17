@@ -13,10 +13,14 @@ lint:
 clean:
 	bazel clean
 
-tensorflow:
+c++17.tar.gz:
 	wget https://github.com/dropoutlabs/tensorflow/archive/c++17.tar.gz
+
+tensorflow-c-17:
 	tar -xf c++17.tar.gz
-	cd tensorflow-c-17 && echo -e "\n" | TF_ENABLE_XLA=0 TF_NEED_CUDA=0 TF_SET_ANDROID_WORKSPACE=0 \
+
+tensorflow: c++17.tar.gz tensorflow-c-17
+	cd tensorflow-c-17 && echo -e '\n' | TF_ENABLE_XLA=0 TF_NEED_CUDA=0 TF_SET_ANDROID_WORKSPACE=0 \
 	 TF_CONFIGURE_IOS=0 TF_NEED_OPENCL_SYCL=0 TF_DOWNLOAD_CLANG=0 \
 	 TF_NEED_ROCM=0 TF_NEED_MPI=0 ./configure
 	cd tensorflow-c-17 && bazel build --config=opt --config=c++17 --config=noaws --config=nogcp \
