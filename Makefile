@@ -11,6 +11,7 @@ lint:
 	cd tf_seal && find . -iname *.h -o -iname *.cc | xargs cpplint --filter=-legal/copyright
 
 clean:
+	rm -f .bazelrc || true
 	bazel clean
 
 c++17.tar.gz:
