@@ -1,9 +1,12 @@
 #include <iostream>
 #include <vector>
 
+#include "tensorflow/core/framework/device_attributes.pb.h"
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
+#include "tensorflow/core/framework/resource_mgr.h"
 #include "tensorflow/core/framework/shape_inference.h"
+#include "tensorflow/core/framework/type_index.h"
 #include "tensorflow/core/framework/variant.h"
 #include "tensorflow/core/framework/variant_encode_decode.h"
 #include "tensorflow/core/framework/variant_op_registry.h"
@@ -12,20 +15,25 @@
 #include "seal/seal.h"
 
 #include "tf_seal/cc/kernels/key_variants.h"
+#include "tf_seal/cc/kernels/seal_context.h"
 #include "tf_seal/cc/kernels/seal_helpers.h"
 #include "tf_seal/cc/kernels/seal_tensors.h"
 
 namespace tf_seal {
 
 using tensorflow::DEVICE_CPU;
+using tensorflow::LookupOrCreateResource;
+using tensorflow::MakeTypeIndex;
 using tensorflow::OpKernel;
 using tensorflow::OpKernelConstruction;
 using tensorflow::OpKernelContext;
+using tensorflow::ResourceHandle;
 using tensorflow::Status;
 using tensorflow::Tensor;
 using tensorflow::TensorShape;
 using tensorflow::TensorShapeUtils;
 using tensorflow::Variant;
+using tensorflow::core::RefCountPtr;
 using tensorflow::errors::InvalidArgument;
 
 template <typename T>
@@ -44,16 +52,6 @@ Status GetVariant(OpKernelContext* ctx, int index, const T** res) {
   return Status::OK();
 }
 
-std::shared_ptr<seal::SEALContext> SetParams() {
-  seal::EncryptionParameters parms(seal::scheme_type::CKKS);
-
-  parms.set_poly_modulus_degree(kPolyModulusDegree);
-  parms.set_coeff_modulus(
-      seal::CoeffModulus::Create(kPolyModulusDegree, {60, 40, 40, 60}));
-
-  return seal::SEALContext::Create(parms);
-}
-
 void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
                        Evaluator* evaluator, const Ciphertext& a,
                        const Ciphertext& to_mod, Ciphertext* dest) {
@@ -65,6 +63,20 @@ void ModSwitchIfNeeded(std::shared_ptr<seal::SEALContext> context,
   } else {
     *dest = to_mod;
   }
+}
+
+Status LookupOrCreateWrapper(OpKernelContext* ctx,
+                             RefCountPtr<Context>* context) {
+  auto hndl = ResourceHandle();
+  hndl.set_name("seal_context");
+  hndl.set_device(ctx->device()->attributes().name());
+  hndl.set_hash_code(MakeTypeIndex<Context>().hash_code());
+
+  return tensorflow::LookupOrCreateResource<Context>(ctx, hndl, context,
+                                                     [](auto context) {
+                                                       *context = new Context;
+                                                       return Status();
+                                                     });
 }
 
 class SealKeyGenOp : public OpKernel {
@@ -82,21 +94,22 @@ class SealKeyGenOp : public OpKernel {
     Tensor* out1;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
-    seal::KeyGenerator gen(context);
+    seal::KeyGenerator gen(context->context);
 
     PublicKeysVariant pub_keys;
 
-    if(gen_public) {
+    if (gen_public) {
       pub_keys.public_key = gen.public_key();
     }
 
-    if(gen_relin) {
+    if (gen_relin) {
       pub_keys.relin_keys = gen.relin_keys();
     }
 
-    if(gen_galois) {
+    if (gen_galois) {
       pub_keys.galois_keys = gen.galois_keys();
     }
 
@@ -136,12 +149,13 @@ class SealEncryptOp : public OpKernel {
     Tensor* val;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &val));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
     CipherTensor cipher(input.dim_size(0), input.dim_size(1));
 
-    seal::Encryptor encryptor(context, key->public_key);
-    seal::CKKSEncoder encoder(context);
+    seal::Encryptor encryptor(context->context, key->public_key);
+    seal::CKKSEncoder encoder(context->context);
 
     auto data = input.flat<T>().data();
     int rows = input.dim_size(0);
@@ -180,10 +194,11 @@ class SealDecryptOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, output_shape, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
-    seal::Decryptor decryptor(context, key->key);
-    seal::CKKSEncoder encoder(context);
+    seal::Decryptor decryptor(context->context, key->key);
+    seal::CKKSEncoder encoder(context->context);
 
     seal::Plaintext plain_result;
 
@@ -217,23 +232,24 @@ class SealAddOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
     CipherTensor res(*a);
 
-    Evaluator evaluator(context);
-
     for (int i = 0; i < a->rows(); i++) {
       Ciphertext new_b;
-      ModSwitchIfNeeded(context, &evaluator, a->value[i], b->value[i], &new_b);
+      ModSwitchIfNeeded(context->context, &context->evaluator, a->value[i],
+                        b->value[i], &new_b);
 
       Ciphertext new_a;
-      ModSwitchIfNeeded(context, &evaluator, new_b, a->value[i], &new_a);
+      ModSwitchIfNeeded(context->context, &context->evaluator, new_b,
+                        a->value[i], &new_a);
 
       // For add operations the scale needs to be exact, set that here
       new_b.scale() = new_a.scale();
 
-      evaluator.add(new_a, new_b, res.value[i]);
+      context->evaluator.add(new_a, new_b, res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -253,9 +269,10 @@ class SealAddPlainOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
-    seal::CKKSEncoder encoder(context);
+    seal::CKKSEncoder encoder(context->context);
 
     auto data = b.flat<T>().data();
     int rows = b.dim_size(0);
@@ -269,11 +286,9 @@ class SealAddPlainOp : public OpKernel {
           std::vector<double>(data + (cols * i), data + (cols * (i + 1))),
           kScale, plain);
 
-      seal::Evaluator evaluator(context);
+      context->evaluator.mod_switch_to_inplace(plain, a->value[i].parms_id());
 
-      evaluator.mod_switch_to_inplace(plain, a->value[i].parms_id());
-
-      evaluator.add_plain(a->value[i], plain, res.value[i]);
+      context->evaluator.add_plain(a->value[i], plain, res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -300,22 +315,25 @@ class SealMulOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
     CipherTensor res(*a);
 
-    Evaluator evaluator(context);
+    auto evaluator = &context->evaluator;
 
     for (int i = 0; i < a->rows(); i++) {
       Ciphertext new_b;
-      ModSwitchIfNeeded(context, &evaluator, a->value[i], b->value[i], &new_b);
+      ModSwitchIfNeeded(context->context, evaluator, a->value[i], b->value[i],
+                        &new_b);
 
       Ciphertext new_a;
-      ModSwitchIfNeeded(context, &evaluator, new_b, a->value[i], &new_a);
+      ModSwitchIfNeeded(context->context, evaluator, new_b, a->value[i],
+                        &new_a);
 
-      evaluator.multiply(new_a, new_b, res.value[i]);
-      evaluator.relinearize_inplace(res.value[i], pub_keys->relin_keys);
-      evaluator.rescale_to_next_inplace(res.value[i]);
+      evaluator->multiply(new_a, new_b, res.value[i]);
+      evaluator->relinearize_inplace(res.value[i], pub_keys->relin_keys);
+      evaluator->rescale_to_next_inplace(res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -336,10 +354,12 @@ class SealMulPlainOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
-    seal::CKKSEncoder encoder(context);
-    seal::Evaluator evaluator(context);
+    seal::CKKSEncoder encoder(context->context);
+    auto evaluator = &context->evaluator;
+
     CipherTensor res(*a);
 
     auto data = b.flat<T>().data();
@@ -353,10 +373,10 @@ class SealMulPlainOp : public OpKernel {
           std::vector<double>(data + (cols * i), data + (cols * (i + 1))),
           kScale, plain);
 
-      evaluator.mod_switch_to_inplace(plain, a->value[i].parms_id());
+      evaluator->mod_switch_to_inplace(plain, a->value[i].parms_id());
 
-      evaluator.multiply_plain(a->value[i], plain, res.value[i]);
-      evaluator.rescale_to_next_inplace(res.value[i]);
+      evaluator->multiply_plain(a->value[i], plain, res.value[i]);
+      evaluator->rescale_to_next_inplace(res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -394,19 +414,20 @@ class SealMatMulOp : public OpKernel {
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
     CipherTensor res(a->rows(), b->rows());
     int rows = a->rows();
 
-    seal::Evaluator evaluator(context);
+    auto evaluator = &context->evaluator;
 
-    matmul(context, &evaluator, *a, *b, &res, pub_keys->relin_keys,
+    matmul(context->context, evaluator, *a, *b, &res, pub_keys->relin_keys,
            pub_keys->galois_keys);
 
     for (int i = 0; i < rows; i++) {
-      evaluator.relinearize_inplace(res.value[i], pub_keys->relin_keys);
-      evaluator.rescale_to_next_inplace(res.value[i]);
+      evaluator->relinearize_inplace(res.value[i], pub_keys->relin_keys);
+      evaluator->rescale_to_next_inplace(res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -432,24 +453,27 @@ class SealMatMulPlainOp : public OpKernel {
     const PublicKeysVariant* pub_keys = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &pub_keys));
 
-    OP_REQUIRES(ctx, pub_keys->galois_keys.data().size() >= 1,
-                InvalidArgument("No galois keys found for seal matmul plain op"));
+    OP_REQUIRES(
+        ctx, pub_keys->galois_keys.data().size() >= 1,
+        InvalidArgument("No galois keys found for seal matmul plain op"));
 
     Tensor* output;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-    auto context = SetParams();
+    auto context = RefCountPtr<Context>();
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
 
-    seal::CKKSEncoder encoder(context);
+    seal::CKKSEncoder encoder(context->context);
 
     CipherTensor res(a->rows(), b.dim_size(0));
 
-    seal::Evaluator evaluator(context);
+    auto evaluator = &context->evaluator;
 
-    matmul_plain<T>(context, &evaluator, *a, b, &res, pub_keys->galois_keys);
+    matmul_plain<T>(context->context, evaluator, *a, b, &res,
+                    pub_keys->galois_keys);
 
     for (int i = 0; i < a->rows(); i++) {
-      evaluator.rescale_to_next_inplace(res.value[i]);
+      evaluator->rescale_to_next_inplace(res.value[i]);
     }
 
     output->scalar<Variant>()() = std::move(res);
