@@ -17,8 +17,8 @@ namespace tf_seal {
 
 using tensorflow::VariantTensorData;
 
-using seal::KeyGenerator;
 using seal::GaloisKeys;
+using seal::KeyGenerator;
 using seal::PublicKey;
 using seal::RelinKeys;
 using seal::SecretKey;

@@ -11,7 +11,8 @@ cc_binary(
         "cc/kernels/key_variants.h",
         "cc/kernels/key_variants.cc",
         "cc/ops/seal_ops.cc",
-        "cc/kernels/seal_helpers.h"
+        "cc/kernels/seal_helpers.h",
+        "cc/kernels/seal_context.h"
     ],
     linkshared = 1,
     deps = [
