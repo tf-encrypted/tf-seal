@@ -1,4 +1,8 @@
+#ifndef TF_SEAL_CC_KERNELS_SEAL_CONTEXT_H_
+#define TF_SEAL_CC_KERNELS_SEAL_CONTEXT_H_
+
 #include <memory>
+#include <string>
 
 #include "tensorflow/core/framework/resource_mgr.h"
 
@@ -25,9 +29,12 @@ struct Context : public tensorflow::ResourceBase {
   virtual std::string DebugString() const { return "SEAL Context"; }
 
   // Returns memory used by this resource.
+  // TODO(justin1121): consider estimating this
   virtual tensorflow::int64 MemoryUsed() const { return 0; }
 
   std::shared_ptr<seal::SEALContext> context;
   Evaluator evaluator;
 };
 }  // namespace tf_seal
+
+#endif  // TF_SEAL_CC_KERNELS_SEAL_CONTEXT_H_
