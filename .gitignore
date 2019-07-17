@@ -35,3 +35,7 @@
 .vscode
 bazel*
 .bazelrc
+
+# Python
+.mypy**
+**.whl

@@ -1,106 +1,132 @@
 # TF Seal
 
-TF Seal implements a bridge between Tensorflow and [Microsoft SEAL](https://github.com/microsoft/SEAL) library.
+TF Seal provides a bridge between [TF Encrypted](https://github.com/tf-encrypted/tf-encrypted) and the [Microsoft SEAL](https://github.com/microsoft/SEAL) homomorphic encryption library, making it easier than ever to use this library to compute on encrypted data directly from TensorFlow.
 
-## Developer Requirements
+[![PyPI](https://img.shields.io/pypi/v/tf-seal.svg)](https://pypi.org/project/tf-seal/) [![CircleCI Badge](https://circleci.com/gh/dropoutlabs/tf-seal/tree/master.svg?style=svg)](https://circleci.com/gh/dropoutlabs/tf-seal/tree/master)
 
-**Ubuntu**
+## Usage
 
-TODO simplify this, add a bootstrap script to Makefile
+*TODO*
 
-We need to install the following software to be able to use TF SEAL.
+## Installation
 
-- Python 3.7
-- Bazel 0.26.1 or greater
-- cmake
-- [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl)
-- Microsoft SEAL
-
-We recommend using [Anaconda](https://www.anaconda.com/distribution/) to set up a Python 3.7 environment. Once Anaconda is installed this can be done with:
+We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/) to set up and use a Python 3.7 environment for all instructions below:
 
 ```
-$ conda create -n py37 python=3.7
-$ conda activate py37
+conda create -n tfseal python=3.7 -y
+source activate tfseal
 ```
 
-
-**MacOS**
-
-TODO simplify this, add a bootstrap script to Makefile
-
-We need to install the following software to be able to use TF SEAL.
-
-- Python 3.7
-- Homebrew
-- Bazel 0.26.1 or greater
-- cmake
-- [Custom Tensorflow build](https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl)
-- Microsoft SEAL
-
-We recommend using [Anaconda](https://www.anaconda.com/distribution/) to set up a Python 3.7 environment. Once Anaconda is installed this can be done with:
+TF Seal can then be installed from [PyPI]():
 
 ```
-$ conda create -n py37 python=3.7
-$ source activate py37
+pip install tf-seal
 ```
 
-We recommed using [Homebrew](https://brew.sh/) to install the next couple of dependencies. This can be installed easily with:
+### Custom TensorFlow
+
+A custom build of TensorFlow is currently needed to run TF Seal due to a mismatch between the C++ version used by the official TensorFlow build (C++11) and the one needed by Microsoft SEAL (C++17). A [patched version of TensorFlow](https://github.com/dropoutlabs/tensorflow) built with C++17 can be installed as shown below.
+
+#### Ubuntu
 
 ```
-$ /usr/bin/ruby -e "$(curl -fsSL \
-    https://raw.githubusercontent.com/Homebrew/install/master/install)"
+wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
 ```
 
-Bazel recommends installing with their binary installed. The documentation for this can be found [here](https://docs.bazel.build/versions/master/install-os-x.html#install-with-installer-mac-os-x). But if you have Homebrew already installed you can install bazel with a couple of simple commands:
+#### macOS
 
 ```
-$ brew tap bazelbuild/tap
-$ brew install bazelbuild/tap/bazel
-```
-
-Install the custom Tensorflow:
-
-```
-wget https://storage.googleapis.com/tf-pips/tf-c%2B%2B17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
+wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 pip install tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 ```
 
-Install cmake:
+## Development
+
+We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/) to set up and use a Python 3.7 environment for all instructions below:
 
 ```
+conda create -n tfseal-dev python=3.7 -y
+source activate tfseal-dev
+```
+
+### Requirements
+
+#### Ubuntu
+
+*TODO*
+
+<!--
+The only requirement for Ubuntu is to have [docker installed](https://docs.docker.com/install/linux/docker-ce/ubuntu/). This is the recommended way to [build custom operations for TensorFlow](https://github.com/tensorflow/custom-op). We provide a custom development container for TF Big with all dependencies already installed.
+
+
+```
+wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+```
+-->
+
+#### macOS
+
+Setting up a development environment on macOS is a little more involved since we cannot use a docker container. We need the following items:
+
+- Python (== 3.7)
+- [Bazel](https://www.bazel.build/) (>= 0.26.1)
+- CMake
+- [TensorFlow built with C++17](#custom-tensorflow)
+
+Using [Homebrew](https://brew.sh/) we make sure that both [Bazel](https://docs.bazel.build/versions/master/install-os-x.html#install-with-installer-mac-os-x) and CMake are installed:
+
+```
+brew tap bazelbuild/tap
+brew install bazelbuild/tap/bazel
 brew install cmake
 ```
 
-We'll have to build and install Microsoft SEAL.
-
-Download and extract:
+The remaining PyPI packages can then be installed using:
 
 ```
-wget https://github.com/microsoft/SEAL/tree/3.3.1.tar.gz
-tar -xf SEAL-3.3.1.tar.gz
+pip install -r requirements-dev.txt
 ```
 
-Build and install:
+Note that Microsoft SEAL will be downloaded as part of the build process but the Bazel build files also include instructions for using a local version instead.
+
+### Testing
+
+#### Ubuntu
+
+*TODO*
+
+<!--
+Run the tests on Ubuntu by running the `make test` command inside of a docker container. Right now, the docker container doesn't exist on docker hub yet so we must first build it:
 
 ```
-cd SEAL-3.3.1/native/src
-cmake .
-make
-sudo make install
+docker build -t tf-encrypted/tf-big:0.1.0 .
 ```
 
-## Building
+Then we can run `make test`:
 
-### Tests
+```
+sudo docker run -it \
+  -v `pwd`:/opt/my-project -w /opt/my-project \
+  tf-encrypted/tf-big:0.1.0 /bin/bash -c "make test"
+```
+-->
 
-**MacOS**
+#### macOS
 
-Once the environment is set up we can simply run:
+Once the development environment is set up we can simply run:
 
 ```
 make test
 ```
 
-### Pip Package
+<!--
+### Building Pip Package
 
-TODO
+#### macOS
+
+```
+make build
+```
+-->
