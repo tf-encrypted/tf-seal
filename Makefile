@@ -26,6 +26,6 @@ tensorflow: c++17.tar.gz tensorflow-c-17
 	cd tensorflow-c-17 && bazel build --config=opt --config=c++17 --config=noaws --config=nogcp \
 		--config=nohdfs --config=noignite --config=nokafka --config=nonccl \
 		//tensorflow/tools/pip_package:build_pip_package
-	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package pkgs
+	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package --nightly_flag pkgs
 
 .PHONY: test fmt lint clean
