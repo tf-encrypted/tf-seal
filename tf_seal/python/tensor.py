@@ -40,7 +40,7 @@ class Tensor(object):
     if isinstance(other, Tensor):
       res = ops.seal_add(self._raw, other._raw)
     else:
-      res = ops.seal_add_plain(self._raw, other._raw)
+      res = ops.seal_add_plain(self._raw, other)
 
     return Tensor(res, self._secret_key, self._public_keys)
 
@@ -53,14 +53,14 @@ class Tensor(object):
     if isinstance(other, Tensor):
       res = ops.seal_mul(self._raw, other._raw, self._public_keys)
     else:
-      res = ops.seal_mul_plain(self._raw, other._raw)
+      res = ops.seal_mul_plain(self._raw, other)
     return Tensor(res, self._secret_key, self._public_keys)
 
   def matmul(self, other):
     if isinstance(other, Tensor):
       res = ops.seal_mat_mul(self._raw, other._raw, self._public_keys)
     else:
-      res = ops.seal_mul_plain(self._raw, other._raw, self._public_keys)
+      res = ops.seal_mat_mul_plain(self._raw, other, self._public_keys)
     return Tensor(res, self._secret_key, self._public_keys)
 
 

@@ -29,8 +29,27 @@ class EvaluationTest(test.TestCase):
 
 
 class ArithmeticTest(test.TestCase):
+  def _core_matmul_test(self, plain=False):
+    public_keys, secret_key = seal_key_gen(gen_relin=True, gen_galois=True)
 
-  def _core_test(self, op):
+    x_raw = np.array([[1234, 1234], [1234, 1234]]).astype(np.float64)
+    y_raw = np.array([[1234, 1234], [1234, 1234]]).astype(np.float64)
+    z_raw = x_raw.dot(y_raw)
+
+    x = convert_to_tensor(x_raw, secret_key, public_keys)
+
+    if not plain:
+        y = convert_to_tensor(y_raw, secret_key, public_keys)
+    else:
+        y = y_raw
+
+    z = x.matmul(y)
+
+    with tf.Session() as sess:
+      res = sess.run(z)
+      np.testing.assert_array_almost_equal(res, z_raw.astype(np.float64), decimal=3)
+
+  def _core_test(self, op, plain=False):
     public_keys, secret_key = seal_key_gen(gen_relin=True)
 
     x_raw = np.array([[1234, 1234]]).astype(np.float64)
@@ -38,7 +57,12 @@ class ArithmeticTest(test.TestCase):
     z_raw = op(x_raw, y_raw)
 
     x = convert_to_tensor(x_raw, secret_key, public_keys)
-    y = convert_to_tensor(y_raw, secret_key, public_keys)
+
+    if not plain:
+        y = convert_to_tensor(y_raw, secret_key, public_keys)
+    else:
+        y = y_raw
+
     z = op(x, y)
 
     with tf.Session() as sess:
@@ -48,8 +72,21 @@ class ArithmeticTest(test.TestCase):
   def test_add(self):
     self._core_test(lambda x, y: x + y)
 
+  def test_add_plain(self):
+    self._core_test(lambda x, y: x + y, plain=True)
+
   def test_mul(self):
     self._core_test(lambda x, y: x * y)
+
+  def test_mul_plain(self):
+    self._core_test(lambda x, y: x * y, plain=True)
+
+  def test_matmul(self):
+    self._core_matmul_test()
+
+  def test_matmul_plain(self):
+    self._core_matmul_test(plain=True)
+
 
 class ConvertTest(test.TestCase):
 
