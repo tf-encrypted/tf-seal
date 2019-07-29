@@ -26,6 +26,7 @@ cc_binary(
 py_library(
     name = "seal_ops_py",
     srcs = ([
+        "python/tensor.py",
         "python/ops/seal_ops.py",
     ]),
     data = [
@@ -40,6 +41,18 @@ py_test(
         "python/ops/seal_ops_test.py",
     ],
     main = "python/ops/seal_ops_test.py",
+    deps = [
+        ":seal_ops_py",
+    ],
+    srcs_version = "PY2AND3",
+)
+
+py_test(
+    name = "tensor_test",
+    srcs = [
+        "python/tensor_test.py",
+    ],
+    main = "python/tensor_test.py",
     deps = [
         ":seal_ops_py",
     ],
