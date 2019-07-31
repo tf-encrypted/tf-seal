@@ -13,3 +13,4 @@ seal_mul_plain = seal_ops.seal_mul_plain
 seal_key_gen = seal_ops.seal_key_gen
 seal_mat_mul = seal_ops.seal_mat_mul
 seal_mat_mul_plain = seal_ops.seal_mat_mul_plain
+seal_poly_eval = seal_ops.seal_poly_eval

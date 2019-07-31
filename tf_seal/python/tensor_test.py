@@ -16,7 +16,7 @@ class EvaluationTest(test.TestCase):
 
     with tf.Session() as sess:
       res = sess.run(x)
-      np.testing.assert_array_almost_equal(res, x_raw.astype(np.float64))
+      np.testing.assert_array_almost_equal(res, x_raw.astype(np.float64), 0.1)
 
   def test_eval(self):
     public_keys, secret_key = seal_key_gen()
@@ -25,7 +25,7 @@ class EvaluationTest(test.TestCase):
 
     with tf.Session() as sess:
       res = x.eval(session=sess)
-      np.testing.assert_array_almost_equal(res, x_raw.astype(np.float64))
+      np.testing.assert_array_almost_equal(res, x_raw.astype(np.float64), 0.1)
 
 
 class ArithmeticTest(test.TestCase):
@@ -47,7 +47,7 @@ class ArithmeticTest(test.TestCase):
 
     with tf.Session() as sess:
       res = sess.run(z)
-      np.testing.assert_array_almost_equal(res, z_raw.astype(np.float64), decimal=3)
+      np.testing.assert_array_almost_equal(res, z_raw.astype(np.float64), 0.1)
 
   def _core_test(self, op, plain=False):
     public_keys, secret_key = seal_key_gen(gen_relin=True)
@@ -67,7 +67,7 @@ class ArithmeticTest(test.TestCase):
 
     with tf.Session() as sess:
       res = sess.run(z)
-      np.testing.assert_array_almost_equal(res, z_raw.astype(np.float64), decimal=3)
+      np.testing.assert_array_almost_equal(res, z_raw.astype(np.float64), 0.1)
 
   def test_add(self):
     self._core_test(lambda x, y: x + y)
@@ -101,7 +101,7 @@ class ConvertTest(test.TestCase):
 
     with tf.Session() as sess:
       res = sess.run(x)
-      np.testing.assert_array_almost_equal(res, out_np)
+      np.testing.assert_array_almost_equal(res, out_np, 0.1)
 
   def test_constant_float32(self):
     x = np.array([[1,2,3,4]]).astype(np.float32)

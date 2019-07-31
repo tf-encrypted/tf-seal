@@ -10,6 +10,8 @@
 namespace tf_seal {
 
 using tensorflow::Tensor;
+using tensorflow::Status;
+using tensorflow::error::Code;
 
 using seal::Ciphertext;
 using seal::CKKSEncoder;
@@ -20,7 +22,7 @@ using seal::RelinKeys;
 using seal::SEALContext;
 
 const double kScale = pow(2.0, 40);
-const size_t kPolyModulusDegreePower = 13;
+const size_t kPolyModulusDegreePower = 15;
 const size_t kPolyModulusDegree = pow(2, kPolyModulusDegreePower);
 
 // Algorithm 4 (FHE.sumslots)
@@ -123,8 +125,6 @@ void matmul_plain(std::shared_ptr<SEALContext> context, Evaluator* evaluator,
       rotate_sum(evaluator, &(tmp[j]), galois_keys);
 
       zero_all_but_first(context, evaluator, &(tmp[j]), kScale);
-
-      evaluator->rescale_to_next_inplace(tmp[j]);
 
       if (j == 0) {
         encoder.encode(std::vector<double>(0), tmp[j].parms_id(),
