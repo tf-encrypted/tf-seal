@@ -8,3 +8,14 @@ toolchain(
     toolchain = "@rules_foreign_cc//tools/build_defs/native_tools:built_cmake",
     toolchain_type = "@rules_foreign_cc//tools/build_defs:cmake_toolchain",
 )
+
+sh_binary(
+    name = "build_pip_pkg",
+    srcs = ["build_pip_pkg.sh"],
+    data = [
+        "README.md",
+        "MANIFEST.in",
+        "setup.py",
+        "//tf_seal:tf_seal_py",
+    ],
+)
