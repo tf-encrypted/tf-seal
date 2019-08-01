@@ -6,7 +6,30 @@ TF Seal provides a bridge between [TF Encrypted](https://github.com/tf-encrypted
 
 ## Usage
 
-*TODO*
+Here's an example how you would compute a simple matrix multiplication:
+
+```
+import numpy as np
+import tensorflow as tf
+
+import tf_seal as tfs
+
+public_keys, secret_key = tfs.seal_key_gen(gen_relin=True, gen_galois=True)
+
+# encrypted input -> tf_seal.Tensor
+a_plain = np.random.normal(size=(2, 2)).astype(np.float32)
+a = tfs.constant(a_plain, secret_key, public_keys)
+
+# public weights
+b = np.random.normal(size=(2, 2)).astype(np.float32)
+
+# because of how the data is laid out in memory tfs.matmul expects
+# the b matrix to be order column-major wise
+c = tfs.matmul(a, b.transpose())
+
+with tf.Session() as sess:
+    print(sess.run(c))
+```
 
 ## Installation
 
@@ -102,13 +125,7 @@ Once the custom TensorFlow is installed you will be able to start development.
 
 ### Testing
 
-#### Ubuntu
-
-*TODO*
-
-#### macOS
-
-Once the development environment is set up we can simply run:
+Once the development environment is set up you can run:
 
 ```
 make test
