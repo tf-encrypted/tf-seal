@@ -6,7 +6,7 @@ TF Seal provides a bridge between [TF Encrypted](https://github.com/tf-encrypted
 
 ## Usage
 
-Here's an example how you would compute a simple matrix multiplication:
+The following demonstrates how to perform a matrix multiplication using homomorphic encryption inside of TensorFlow.
 
 ```
 import numpy as np
