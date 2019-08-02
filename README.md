@@ -58,7 +58,7 @@ wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-c
 pip install tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 ```
 
-After installing the custom TensorFlow, TF Seal be installed from [PyPI]():
+After installing the custom build of TensorFlow you can install TF Seal from [PyPi]() using pip:
 
 ```
 pip install tf-seal
