@@ -40,6 +40,7 @@ http_archive(
     name = "seal",
     build_file = "seal/BUILD",
     url = "https://github.com/microsoft/SEAL/archive/3.3.1.zip",
+    sha256 = "83b8748f2f342b0e90eb81c73cfe162a86cc5ca6f7facfa75fa84b9f82a2b74d",
     strip_prefix = "SEAL-3.3.1",
 )
 
