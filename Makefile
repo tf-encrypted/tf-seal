@@ -1,6 +1,6 @@
 BAZEL_REQUIRED_VERSION=0.26.
 
-BAZEL_PATH=$(shell which docker)
+BAZEL_PATH=$(shell which bazel)
 
 bazelcheck:
 ifeq (,$(BAZEL_PATH))
@@ -63,7 +63,10 @@ ifeq (,$(VERSION))
     VERSION=dev
 endif
 NOT_RC=$(shell git tag --points-at HEAD | grep -v -e -rc)
-ARTIFACT_LOCATION=dist
+
+ifeq (,$(ARTIFACT_LOCATION))
+	ARTIFACT_LOCATION=dist
+endif
 
 ifeq ($(EXACT_TAG),)
     PUSHTYPE=master
@@ -91,9 +94,8 @@ ifeq (,$(shell grep -e $(VERSION) setup.py))
 	$(error "Version specified in setup.py does not match $(VERSION)")
 endif
 
-pypi-build: pypi-version-check
-	# pip install --upgrade setuptools wheel twine
-	rm -rf dist
+pypi-build:
+	pip install --upgrade setuptools wheel twine
 	$(MAKE) build
 
 .PHONY: pypi-build pypi-version-check
@@ -120,7 +122,7 @@ pypi-push-release-candidate: releasecheck pypi-credentials-check pypi-build
 
 pypi-push-release: pypi-push-release-candidate
 
-pypi-push: pypi-push-$(PUSHTYPE)
+pypi-push: pypi-version-check pypi-push-$(PUSHTYPE)
 
 .PHONY: pypi-push pypi-push-release pypi-push-release-candidate pypi-push-master pypi-credentials-check
 
