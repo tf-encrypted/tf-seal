@@ -6,7 +6,30 @@ TF Seal provides a bridge between [TF Encrypted](https://github.com/tf-encrypted
 
 ## Usage
 
-*TODO*
+The following demonstrates how to perform a matrix multiplication using homomorphic encryption inside of TensorFlow.
+
+```
+import numpy as np
+import tensorflow as tf
+
+import tf_seal as tfs
+
+public_keys, secret_key = tfs.seal_key_gen(gen_relin=True, gen_galois=True)
+
+# encrypted input -> tf_seal.Tensor
+a_plain = np.random.normal(size=(2, 2)).astype(np.float32)
+a = tfs.constant(a_plain, secret_key, public_keys)
+
+# public weights
+b = np.random.normal(size=(2, 2)).astype(np.float32)
+
+# because of how the data is laid out in memory tfs.matmul expects
+# the b matrix to be order column-major wise
+c = tfs.matmul(a, b.transpose())
+
+with tf.Session() as sess:
+    print(sess.run(c))
+```
 
 ## Installation
 
@@ -15,12 +38,6 @@ We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) o
 ```
 conda create -n tfseal python=3.7 -y
 source activate tfseal
-```
-
-TF Seal can then be installed from [PyPI]():
-
-```
-pip install tf-seal
 ```
 
 ### Custom TensorFlow
@@ -41,6 +58,12 @@ wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-c
 pip install tf_nightly-1.14.0-cp37-cp37m-macosx_10_7_x86_64.whl
 ```
 
+After installing the custom build of TensorFlow you can install TF Seal from [PyPi]() using pip:
+
+```
+pip install tf-seal
+```
+
 ## Development
 
 We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/) to set up and use a Python 3.7 environment for all instructions below:
@@ -54,21 +77,30 @@ source activate tfseal-dev
 
 #### Ubuntu
 
-*TODO*
+- Python (== 3.7)
+- [Bazel](https://www.bazel.build/) (>= 0.26.1)
+- CMake
+- [TensorFlow built with C++17](#custom-tensorflow)
 
-<!--
-The only requirement for Ubuntu is to have [docker installed](https://docs.docker.com/install/linux/docker-ce/ubuntu/). This is the recommended way to [build custom operations for TensorFlow](https://github.com/tensorflow/custom-op). We provide a custom development container for TF Big with all dependencies already installed.
-
+CMake can be installed simply with apt:
 
 ```
-wget https://storage.googleapis.com/tf-pips/tf-c++17-support/tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
-pip install tf_nightly-1.14.0-cp37-cp37m-linux_x86_64.whl
+sudo apt install cmake
 ```
--->
+
+Bazel is a little more involved, the following instructions can be installed, recommend installing Bazel 0.26.1: https://docs.bazel.build/versions/master/install-ubuntu.html#install-with-installer-ubuntu
+
+The remaining PyPI packages can then be installed using:
+
+```
+pip install -r requirements-dev.txt
+```
+
+Once the custom TensorFlow is installed you will be able to start development.
 
 #### macOS
 
-Setting up a development environment on macOS is a little more involved since we cannot use a docker container. We need the following items:
+We need the following items:
 
 - Python (== 3.7)
 - [Bazel](https://www.bazel.build/) (>= 0.26.1)
@@ -89,44 +121,13 @@ The remaining PyPI packages can then be installed using:
 pip install -r requirements-dev.txt
 ```
 
-Note that Microsoft SEAL will be downloaded as part of the build process but the Bazel build files also include instructions for using a local version instead.
+Once the custom TensorFlow is installed you will be able to start development.
 
 ### Testing
 
-#### Ubuntu
-
-*TODO*
-
-<!--
-Run the tests on Ubuntu by running the `make test` command inside of a docker container. Right now, the docker container doesn't exist on docker hub yet so we must first build it:
-
-```
-docker build -t tf-encrypted/tf-big:0.1.0 .
-```
-
-Then we can run `make test`:
-
-```
-sudo docker run -it \
-  -v `pwd`:/opt/my-project -w /opt/my-project \
-  tf-encrypted/tf-big:0.1.0 /bin/bash -c "make test"
-```
--->
-
-#### macOS
-
-Once the development environment is set up we can simply run:
+Once the development environment is set up you can run:
 
 ```
 make test
 ```
 
-<!--
-### Building Pip Package
-
-#### macOS
-
-```
-make build
-```
--->

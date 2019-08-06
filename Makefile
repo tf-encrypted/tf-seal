@@ -10,6 +10,10 @@ fmt:
 lint:
 	cd tf_seal && find . -iname *.h -o -iname *.cc | xargs cpplint --filter=-legal/copyright
 
+build: .bazelrc
+	bazel build build_pip_pkg
+	./bazel-bin/build_pip_pkg `pwd`/artifacts
+
 clean:
 	rm -f .bazelrc || true
 	bazel clean
@@ -29,4 +33,4 @@ tensorflow: tensorflow-c-17
 		//tensorflow/tools/pip_package:build_pip_package
 	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package --nightly_flag pkgs
 
-.PHONY: test fmt lint clean tensorflow
+.PHONY: build test fmt lint clean tensorflow
