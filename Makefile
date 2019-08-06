@@ -1,7 +1,22 @@
+BAZEL_REQUIRED_VERSION=0.26.
+
+BAZEL_PATH=$(shell which docker)
+
+bazelcheck:
+ifeq (,$(BAZEL_PATH))
+ifeq (,$(findstring $(BAZEL_REQUIRED_VERSION),$(shell bazel version)))
+ifeq (,$(BYPASS_BAZEL_CHECK))
+	$(error "Bazel version $(BAZEL_REQUIRED_VERSION) is required.")
+endif
+endif
+endif
+
+.PHONY: bazelcheck
+
 .bazelrc:
 	TF_NEED_CUDA=0 ./configure.sh
 
-test: .bazelrc
+test: .bazelrc bazelcheck
 	bazel test ... --test_output=all
 
 fmt:
@@ -10,11 +25,11 @@ fmt:
 lint:
 	cd tf_seal && find . -iname *.h -o -iname *.cc | xargs cpplint --filter=-legal/copyright
 
-build: .bazelrc
+build: .bazelrc bazelcheck
 	bazel build build_pip_pkg
 	./bazel-bin/build_pip_pkg `pwd`/artifacts
 
-clean:
+clean: bazelcheck
 	rm -f .bazelrc || true
 	bazel clean
 
@@ -34,3 +49,91 @@ tensorflow: tensorflow-c-17
 	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package --nightly_flag pkgs
 
 .PHONY: build test fmt lint clean tensorflow
+
+# ###############################################
+# Version Derivation
+#
+# Rules and variable definitions used to derive the current version of the
+# source code. This information is also used for deriving the type of release
+# to perform if `make push` is invoked.
+# ###############################################
+VERSION=$(shell [ -d .git ] && git describe --tags --abbrev=0 2> /dev/null | sed 's/^v//')
+EXACT_TAG=$(shell [ -d .git ] && git describe --exact-match --tags HEAD 2> /dev/null | sed 's/^v//')
+ifeq (,$(VERSION))
+    VERSION=dev
+endif
+NOT_RC=$(shell git tag --points-at HEAD | grep -v -e -rc)
+ARTIFACT_LOCATION=dist
+
+ifeq ($(EXACT_TAG),)
+    PUSHTYPE=master
+else
+    ifeq ($(NOT_RC),)
+	PUSHTYPE=release-candidate
+    else
+	PUSHTYPE=release
+    endif
+endif
+
+releasecheck:
+ifneq (yes,$(RELEASE_CONFIRM))
+	$(error "Set RELEASE_CONFIRM=yes to really build and push release artifacts")
+endif
+
+.PHONY: releasecheck
+
+# ###############################################
+# Targets for building pip packages for pypi
+# ##############################################
+
+pypi-version-check:
+ifeq (,$(shell grep -e $(VERSION) setup.py))
+	$(error "Version specified in setup.py does not match $(VERSION)")
+endif
+
+pypi-build: pypi-version-check
+	# pip install --upgrade setuptools wheel twine
+	rm -rf dist
+	$(MAKE) build
+
+.PHONY: pypi-build pypi-version-check
+
+# ###############################################
+# Targets for publishing to pypi
+#
+# These targets requires a PYPI_USERNAME, PYPI_PASSWORD, and PYPI_PLATFORM
+# environment variables to be set to be executed properly.
+# ##############################################
+
+pypi-credentials-check:
+ifeq (,$(PYPI_USERNAME))
+ifeq (,$(PYPI_PASSWORD))
+	$(error "Missing PYPI_USERNAME and PYPI_PASSWORD environment variables")
+endif
+endif
+
+pypi-push-master: pypi-credentials-check pypi-build
+
+pypi-push-release-candidate: releasecheck pypi-credentials-check pypi-build
+	@echo "Attempting to upload to pypi"
+	twine upload -u="$(PYPI_USERNAME)" -p="$(PYPI_PASSWORD)" $(ARTIFACT_LOCATION)/*
+
+pypi-push-release: pypi-push-release-candidate
+
+pypi-push: pypi-push-$(PUSHTYPE)
+
+.PHONY: pypi-push pypi-push-release pypi-push-release-candidate pypi-push-master pypi-credentials-check
+
+# ###############################################
+# Pushing Artifacts for a Release
+#
+# The following are meta-rules for building and pushing various different
+# release artifacts to their intended destinations.
+# ###############################################
+
+push:
+	@echo "Attempting to build and push $(VERSION) with push type $(PUSHTYPE) - $(EXACT_TAG)"
+	make pypi-push
+	@echo "Done building and pushing artifacts for $(VERSION)"
+
+.PHONY: push
