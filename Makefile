@@ -114,7 +114,7 @@ ifeq (,$(PYPI_PASSWORD))
 endif
 endif
 
-pypi-push-master: pypi-credentials-check pypi-build
+pypi-push-master: pypi-credentials-check
 
 pypi-push-release-candidate: releasecheck pypi-credentials-check pypi-build
 	@echo "Attempting to upload to pypi"
