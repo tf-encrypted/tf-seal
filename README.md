@@ -64,6 +64,16 @@ After installing the custom build of TensorFlow you can install TF Seal from [Py
 pip install tf-seal
 ```
 
+## Examples
+
+There is currently one example displaying how we can run a simple logistic regression prediction with TF SEAL.
+
+Once TF SEAL is installed we can run the example by simplying running:
+
+```
+python logistic_regression.py
+```
+
 ## Development
 
 We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/) to set up and use a Python 3.7 environment for all instructions below:

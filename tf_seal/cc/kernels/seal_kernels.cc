@@ -474,6 +474,106 @@ class SealMatMulPlainOp : public OpKernel {
 
     for (int i = 0; i < a->rows(); i++) {
       evaluator->rescale_to_next_inplace(res.value[i]);
+      evaluator->rescale_to_next_inplace(res.value[i]);
+    }
+
+    output->scalar<Variant>()() = std::move(res);
+  }
+};
+
+// Not quite a fully generic PolyEval algorithm. It only supports up to four coefficients
+// The main issue here is optimizing the computations so that we can keep the poly modulus
+// degree low. As the poly modulus degree increases the performance decreases.
+template <typename T>
+class SealPolyEvalOp : public OpKernel {
+ public:
+  explicit SealPolyEvalOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* ctx) override {
+    const CipherTensor* x = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 0, &x));
+
+    const Tensor& coeff = ctx->input(1);
+    auto data = coeff.flat<T>().data();
+
+    Tensor* output;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
+
+    const PublicKeysVariant* pub_keys = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 2, &pub_keys));
+
+    OP_REQUIRES(ctx, pub_keys->relin_keys.data().size() >= 1,
+                InvalidArgument("No relin keys found for seal polyeval op"));
+
+    auto context = RefCountPtr<Context>();
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+
+    auto evaluator = &context->evaluator;
+
+    seal::CKKSEncoder encoder(context->context);
+
+    // encode the coefficients
+    std::vector<Plaintext> coeffs;
+    for (int i = 0; i < coeff.NumElements(); i++) {
+      Plaintext coeff;
+
+      encoder.encode(data[i], x->value[0].parms_id(), kScale, coeff);
+      coeffs.push_back(coeff);
+    }
+
+    //
+    std::vector<Ciphertext> x1_encrypted(x->rows());
+    for(int i = 0; i < x->rows(); i++) {
+      evaluator->multiply_plain(x->value[i], coeffs[1], x1_encrypted[i]);
+
+      evaluator->relinearize_inplace(x1_encrypted[i], pub_keys->relin_keys);
+      evaluator->rescale_to_next_inplace(x1_encrypted[i]);
+      x1_encrypted[i].scale() = kScale;
+    }
+
+    std::vector<CipherTensor> xn_encrypteds;
+    for (int i = 2; i < coeff.NumElements(); i++) {
+      CipherTensor xn_encrypted(x->rows(), x->cols());
+      CipherTensor tmp_x_coeff(x->rows(), x->cols());
+
+      std::vector<double> potential_zero(1);
+      encoder.decode(coeffs[i], potential_zero);
+      if (potential_zero[0] != 0.0) {
+        for(int j = 0; j < x->rows(); j++) {
+          evaluator->square(x->value[j], xn_encrypted.value[j]);
+          evaluator->relinearize_inplace(xn_encrypted.value[j], pub_keys->relin_keys);
+          evaluator->rescale_to_next_inplace(xn_encrypted.value[j]);
+
+          if(i == 2) {
+            evaluator->multiply_plain_inplace(xn_encrypted.value[j], coeffs[i]);
+            evaluator->relinearize_inplace(xn_encrypted.value[j], pub_keys->relin_keys);
+            evaluator->rescale_to_next_inplace(xn_encrypted.value[j]);
+          } else if(i == 3) {
+            evaluator->multiply_plain(x->value[j], coeffs[i], tmp_x_coeff.value[j]);
+            evaluator->relinearize_inplace(tmp_x_coeff.value[j], pub_keys->relin_keys);
+            evaluator->rescale_to_next_inplace(tmp_x_coeff.value[j]);
+
+            evaluator->multiply_inplace(xn_encrypted.value[j], tmp_x_coeff.value[j]);
+            evaluator->relinearize_inplace(xn_encrypted.value[j], pub_keys->relin_keys);
+            evaluator->rescale_to_next_inplace(xn_encrypted.value[j]);
+          }
+
+          xn_encrypted.value[j].scale() = kScale;
+        }
+
+        xn_encrypteds.push_back(xn_encrypted);
+      }
+    }
+
+    CipherTensor res(x->rows(), x->cols());
+    evaluator->mod_switch_to_inplace(coeffs[0], x1_encrypted[0].parms_id());
+    for (int i = 0; i < x->rows(); i++) {
+      evaluator->add_plain(x1_encrypted[i], coeffs[0], res.value[i]);
+
+      for(auto val: xn_encrypteds) {
+        evaluator->mod_switch_to_inplace(res.value[i], val.value[i].parms_id());
+        evaluator->add_inplace(res.value[i], val.value[i]);
+      }
     }
 
     output->scalar<Variant>()() = std::move(res);
@@ -496,7 +596,10 @@ class SealMatMulPlainOp : public OpKernel {
       SealMulPlainOp<T>);                                                    \
   REGISTER_KERNEL_BUILDER(                                                   \
       Name("SealMatMulPlain").Device(DEVICE_CPU).TypeConstraint<T>("dtype"), \
-      SealMatMulPlainOp<T>);
+      SealMatMulPlainOp<T>);                                                 \
+  REGISTER_KERNEL_BUILDER(                                                   \
+      Name("SealPolyEval").Device(DEVICE_CPU).TypeConstraint<T>("dtype"),    \
+      SealPolyEvalOp<T>);
 
 REGISTER_GENERIC_OPS(float);
 REGISTER_GENERIC_OPS(double);

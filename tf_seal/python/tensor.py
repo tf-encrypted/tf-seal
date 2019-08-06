@@ -189,13 +189,10 @@ def mul(x, y):
   # TODO(Morten) lifting etc
   return x * y
 
-# def pow(base, exponent, modulus=None, secure=None):
-#   # TODO(Morten) lifting etc
-#   assert isinstance(base, Tensor)
-#   return base.pow(exponent=exponent,
-#                   modulus=modulus,
-#                   secure=secure)
-
 def matmul(x, y):
   # TODO(Morten) lifting etc
   return x.matmul(y)
+
+def poly_eval(x, coeffs):
+  res = ops.seal_poly_eval(x._raw, coeffs, x._public_keys)
+  return Tensor(res, x._secret_key, x._public_keys)

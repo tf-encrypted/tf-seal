@@ -64,3 +64,11 @@ REGISTER_OP("SealMatMulPlain")
     .Input("pub_key: variant")
     .Output("out: variant")
     .SetIsStateful();
+
+REGISTER_OP("SealPolyEval")
+    .Attr("dtype: {float32, float64}")
+    .Input("x: variant")
+    .Input("coeffs: dtype")
+    .Input("pub_key: variant")
+    .Output("out: variant")
+    .SetIsStateful();

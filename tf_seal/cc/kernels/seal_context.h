@@ -17,7 +17,7 @@ std::shared_ptr<seal::SEALContext> SetParams() {
 
   parms.set_poly_modulus_degree(kPolyModulusDegree);
   parms.set_coeff_modulus(
-      seal::CoeffModulus::Create(kPolyModulusDegree, {60, 40, 40, 60}));
+      seal::CoeffModulus::Create(kPolyModulusDegree, {60, 40, 40, 40, 40, 60}));
 
   return seal::SEALContext::Create(parms);
 }
