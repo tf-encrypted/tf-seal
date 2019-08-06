@@ -75,7 +75,7 @@ jobs:
             . venv/bin/activate
             export PATH=$PATH:/root/bin
             make clean
-            ARTIFACT_LOCATION=/tmp/workspace/artifacts make push
+            ARTIFACT_LOCATION=/tmp/workspace/artifacts RELEASE_CONFIRM=yes make push
 
 workflows:
   version: 2
@@ -98,6 +98,7 @@ workflows:
           requires:
             - build-pip-linux
           filters:
+            branches:
+              only: master
             tags:
               only: /^(?:[0-9]+)\.(?:[0-9]+)\.(?:[0-9]+)(?:(\-rc[0-9]+)?)$/
-          context: pypi
