@@ -70,12 +70,11 @@ jobs:
           at: artifacts
       - *bootstrap
       - run:
-          name: make pip package
+          name: upload pip package
           command: |
             . venv/bin/activate
             export PATH=$PATH:/root/bin
-            make clean
-            ARTIFACT_LOCATION=/tmp/workspace/artifacts RELEASE_CONFIRM=yes make push
+            ARTIFACT_LOCATION=artifacts RELEASE_CONFIRM=yes make push
 
 workflows:
   version: 2
