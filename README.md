@@ -2,7 +2,7 @@
 
 TF Seal provides a bridge between [TF Encrypted](https://github.com/tf-encrypted/tf-encrypted) and the [Microsoft SEAL](https://github.com/microsoft/SEAL) homomorphic encryption library, making it easier than ever to use this library to compute on encrypted data directly from TensorFlow.
 
-[![PyPI](https://img.shields.io/pypi/v/tf-seal.svg)](https://pypi.org/project/tf-seal/) [![CircleCI Badge](https://circleci.com/gh/dropoutlabs/tf-seal/tree/master.svg?style=svg)](https://circleci.com/gh/dropoutlabs/tf-seal/tree/master)
+[![PyPI](https://img.shields.io/pypi/v/tf-seal.svg)](https://pypi.org/project/tf-seal/) [![CircleCI Badge](https://circleci.com/gh/tf-encrypted/tf-seal/tree/master.svg?style=svg)](https://circleci.com/gh/tf-encrypted/tf-seal/tree/master)
 
 ## Usage
 
