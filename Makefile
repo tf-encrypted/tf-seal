@@ -116,13 +116,13 @@ endif
 
 pypi-push-master: pypi-credentials-check
 
-pypi-push-release-candidate: releasecheck pypi-credentials-check pypi-build
+pypi-push-release-candidate:  pypi-version-check releasecheck pypi-credentials-check
 	@echo "Attempting to upload to pypi"
 	twine upload -u="$(PYPI_USERNAME)" -p="$(PYPI_PASSWORD)" $(ARTIFACT_LOCATION)/*
 
-pypi-push-release: pypi-push-release-candidate
+pypi-push-release: pypi-version-check pypi-push-release-candidate
 
-pypi-push: pypi-version-check pypi-push-$(PUSHTYPE)
+pypi-push: pypi-push-$(PUSHTYPE)
 
 .PHONY: pypi-push pypi-push-release pypi-push-release-candidate pypi-push-master pypi-credentials-check
 
