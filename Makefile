@@ -11,6 +11,14 @@ endif
 endif
 endif
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	PYPI_PLATFORM=manylinux1_x86_64
+endif
+ifeq ($(UNAME_S),Darwin)
+	PYPI_PLATFORM=macosx_10_11_x86_64
+endif
+
 .PHONY: bazelcheck
 
 .bazelrc:
@@ -27,7 +35,7 @@ lint:
 
 build: .bazelrc bazelcheck
 	bazel build build_pip_pkg
-	./bazel-bin/build_pip_pkg `pwd`/artifacts
+	PYPI_PLATFORM=$(PYPI_PLATFORM) ./bazel-bin/build_pip_pkg `pwd`/artifacts
 
 clean: bazelcheck
 	rm -f .bazelrc || true
