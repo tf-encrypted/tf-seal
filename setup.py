@@ -17,7 +17,7 @@ setuptools.setup(
     version="0.1.0-rc4",
     packages=setuptools.find_packages(),
     package_data={'tf_seal': []},
-    python_requires=">=3.7.0, <3.8",
+    python_requires="==3.7.*",
     install_requires=[
         "numpy >=1.14",
         "tf_nightly >=1.14.0, <2",
