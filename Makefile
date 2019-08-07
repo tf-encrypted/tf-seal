@@ -94,8 +94,10 @@ ifeq (,$(shell grep -e $(VERSION) setup.py))
 	$(error "Version specified in setup.py does not match $(VERSION)")
 endif
 
-pypi-build:
+twine:
 	pip install --upgrade setuptools wheel twine
+
+pypi-build: twine
 	$(MAKE) build
 
 .PHONY: pypi-build pypi-version-check
@@ -116,7 +118,7 @@ endif
 
 pypi-push-master: pypi-credentials-check
 
-pypi-push-release-candidate:  pypi-version-check releasecheck pypi-credentials-check
+pypi-push-release-candidate: pypi-version-check twine releasecheck pypi-credentials-check
 	@echo "Attempting to upload to pypi"
 	twine upload -u="$(PYPI_USERNAME)" -p="$(PYPI_PASSWORD)" $(ARTIFACT_LOCATION)/*
 
@@ -124,7 +126,7 @@ pypi-push-release: pypi-version-check pypi-push-release-candidate
 
 pypi-push: pypi-push-$(PUSHTYPE)
 
-.PHONY: pypi-push pypi-push-release pypi-push-release-candidate pypi-push-master pypi-credentials-check
+.PHONY: pypi-push pypi-push-release pypi-push-release-candidate pypi-push-master pypi-credentials-check twine
 
 # ###############################################
 # Pushing Artifacts for a Release
