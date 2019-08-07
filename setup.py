@@ -27,7 +27,7 @@ setuptools.setup(
     },
     license="Apache License 2.0",
     url="https://github.com/tf-encrypted/tf-seal",
-    description="Arbitrary precision integers in TensorFlow.",
+    description="Bridge between TensorFlow and the Microsoft SEAL homomorphic encryption library.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="The TF Encrypted Authors",
