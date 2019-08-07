@@ -14,7 +14,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tf-seal",
-    version="0.1.0-rc2",
+    version="0.1.0-rc3",
     packages=setuptools.find_packages(),
     package_data={'tf_seal': []},
     python_requires="==3.7",
