@@ -37,6 +37,11 @@ with tf.Session() as sess:
     np.testing.assert_almost_equal(actual, expected, decimal=3)
 ```
 
+## Documentation
+
+Blog posts:
+- [Bridging Microsoft SEAL into TensorFlow](https://medium.com/dropoutlabs/bridging-microsoft-seal-into-tensorflow-b04cc2761ad4)
+
 ## Road map
 
 We are currently working on integrating TF SEAL into [TF Encrypted](https://tf-encrypted.io) such that privacy-preversing machine learning applications can instead access the library through a high-level interface and take advantage of e.g. the Keras API. This includes adding logic that helps optimize homomorphic encryption for a perticular computation, making use even easier.
