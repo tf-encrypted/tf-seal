@@ -44,7 +44,7 @@ Blog posts:
 
 ## Road map
 
-We are currently working on integrating TF SEAL into [TF Encrypted](https://tf-encrypted.io) such that privacy-preversing machine learning applications can instead access the library through a high-level interface and take advantage of e.g. the Keras API. This includes adding logic that helps optimize homomorphic encryption for a perticular computation, making use even easier.
+We are currently working on integrating TF SEAL into [TF Encrypted](https://tf-encrypted.io) such that privacy-preserving machine learning applications can instead access the library through a high-level interface and take advantage of e.g. the Keras API. This includes adding logic that helps optimize homomorphic encryption for a perticular computation, making use even easier.
 
 <img src="https://raw.githubusercontent.com/tf-encrypted/assets/master/tf-seal/app-stack.png" width="45%" />
 
