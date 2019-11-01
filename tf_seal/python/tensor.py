@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import torch as th
 
 import tf_seal.python.ops.seal_ops as ops
 
@@ -154,7 +155,7 @@ def convert_to_tensor(tensor, secret_key, public_keys):
   if isinstance(tensor, (float)):
     return _convert_numpy_tensor(np.array([tensor]), secret_key, public_keys)
 
-  if isinstance(tensor, (list, tuple)):
+  if isinstance(tensor, (list, tuple, th.Tensor)):
     return _convert_numpy_tensor(np.array(tensor), secret_key, public_keys)
 
   if isinstance(tensor, np.ndarray):
