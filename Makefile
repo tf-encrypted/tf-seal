@@ -52,7 +52,7 @@ tensorflow: tensorflow-c-17
 	 TF_CONFIGURE_IOS=0 TF_NEED_OPENCL_SYCL=0 TF_DOWNLOAD_CLANG=0 \
 	 TF_NEED_ROCM=0 TF_NEED_MPI=0 ./configure
 	cd tensorflow-c-17 && bazel build --config=opt --config=c++17 --config=noaws --config=nogcp \
-		--config=nohdfs --config=noignite --config=nokafka --config=nonccl \
+		--config=nohdfs --config=nonccl \
 		//tensorflow/tools/pip_package:build_pip_package
 	cd tensorflow-c-17 && ./bazel-bin/tensorflow/tools/pip_package/build_pip_package --nightly_flag pkgs
 
