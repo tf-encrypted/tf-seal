@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import torch as th
 
 import tf_seal.python.ops.seal_ops as ops
 
@@ -155,7 +154,7 @@ def convert_to_tensor(tensor, secret_key, public_keys):
   if isinstance(tensor, (float)):
     return _convert_numpy_tensor(np.array([tensor]), secret_key, public_keys)
 
-  if isinstance(tensor, (list, tuple, th.Tensor)):
+  if isinstance(tensor, (list, tuple)):
     return _convert_numpy_tensor(np.array(tensor), secret_key, public_keys)
 
   if isinstance(tensor, np.ndarray):
@@ -163,6 +162,15 @@ def convert_to_tensor(tensor, secret_key, public_keys):
 
   if isinstance(tensor, tf.Tensor):
     return _convert_tensorflow_tensor(tensor, secret_key, public_keys)
+
+  # Torch is an extra package
+  try:
+    import torch as th
+    if isinstance(tensor, th.Tensor):
+      return _convert_numpy_tensor(np.array(tensor), secret_key, public_keys)
+  except ModuleNotFoundError:
+    if tensor.__class__.__module__ == 'torch' and tensor.__class__.__name__ == 'Tensor':
+      return _convert_numpy_tensor(np.array(tensor), secret_key, public_keys)
 
   raise ValueError("Don't know how to convert value of type {}".format(type(tensor)))
 

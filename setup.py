@@ -21,10 +21,10 @@ setuptools.setup(
     install_requires=[
         "numpy >=1.14",
         "tf_nightly >=1.14.0, <2",
-        "torch",
     ],
     extras_require={
         "tf": ["tf_nightly >=1.14.0, <2"],
+        "torch": ["torch"],
     },
     license="Apache License 2.0",
     url="https://github.com/tf-encrypted/tf-seal",
