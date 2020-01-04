@@ -12,20 +12,23 @@ def sigmoid(x):
     # 0.5 + 0.197x + -0.004x^3, the 0.0 term is ignored. This
     # approximation was borrowed from https://eprint.iacr.org/2018/462 Section 3.2 Fig 1
     coeffs = np.array([0.5, 0.197, 0.0, -0.004])
+    print("here")
     return tfs.poly_eval(x, coeffs)
 
 public_keys, secret_key = tfs.seal_key_gen(gen_relin=True, gen_galois=True)
 
 # encrypted input -> tf_seal.Tensor
-a_plain = np.random.normal(size=(2, 2)).astype(np.float32)
+a_plain = np.random.normal(size=(20, 20)).astype(np.float32)
 a = tfs.constant(a_plain, secret_key, public_keys)
-
+#print(a_plain)
+#print(a)
 # public weights
-b = np.random.normal(size=(2, 2)).astype(np.float32)
+b = np.random.normal(size=(20, 20)).astype(np.float32)
 
 c = tfs.matmul(a, b.transpose())
+#print("Here")
 d = sigmoid(c)
-
+print(d)
 # get answer from tensorflow to compare
 tf_d = tf_log_reg(a_plain, b)
 

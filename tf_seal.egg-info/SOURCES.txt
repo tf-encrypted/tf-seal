@@ -1,0 +1,16 @@
+MANIFEST.in
+README.md
+setup.py
+tf_seal/__init__.py
+tf_seal.egg-info/PKG-INFO
+tf_seal.egg-info/SOURCES.txt
+tf_seal.egg-info/dependency_links.txt
+tf_seal.egg-info/not-zip-safe
+tf_seal.egg-info/requires.txt
+tf_seal.egg-info/top_level.txt
+tf_seal/python/__init__.py
+tf_seal/python/tensor.py
+tf_seal/python/tensor_test.py
+tf_seal/python/ops/__init__.py
+tf_seal/python/ops/seal_ops.py
+tf_seal/python/ops/seal_ops_test.py

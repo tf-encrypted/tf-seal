@@ -103,7 +103,7 @@ ifeq (,$(shell grep -e $(VERSION) setup.py))
 endif
 
 twine:
-	pip install --upgrade setuptools wheel twine
+	python3.7 -m pip install --upgrade setuptools wheel twine
 
 pypi-build: twine
 	$(MAKE) build

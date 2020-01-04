@@ -42,16 +42,16 @@ done
 if [[ "$TF_NEED_CUDA" == "0" ]]; then
 
   # Check if it's installed
-  if [[ $(pip show tensorflow) == *tensorflow* ]] || [[ $(pip show tf-nightly) == *tf-nightly* ]] ; then
+  if [[ $(python3.7 -m pip show tensorflow) == *tensorflow* ]] || [[ $(python3.7 -m pip show tf-nightly) == *tf-nightly* ]] ; then
     echo 'Using installed tensorflow'
   else
     # Uninstall GPU version if it is installed.
-    if [[ $(pip show tensorflow-gpu) == *tensorflow-gpu* ]]; then
+    if [[ $(python3.7 -m pip show tensorflow-gpu) == *tensorflow-gpu* ]]; then
       echo 'Already have gpu version of tensorflow installed. Uninstalling......\n'
       pip uninstall tensorflow-gpu
-    elif [[ $(pip show tf-nightly-gpu) == *tf-nightly-gpu* ]]; then
+    elif [[ $(python3.7 -m pip show tf-nightly-gpu) == *tf-nightly-gpu* ]]; then
       echo 'Already have gpu version of tensorflow installed. Uninstalling......\n'
-      pip uninstall tf-nightly-gpu
+      python3.7 -m pip uninstall tf-nightly-gpu
     fi
     # Install CPU version
     echo 'Installing tensorflow......\n'
@@ -61,26 +61,26 @@ if [[ "$TF_NEED_CUDA" == "0" ]]; then
 else
 
   # Check if it's installed
-   if [[ $(pip show tensorflow-gpu) == *tensorflow-gpu* ]] || [[ $(pip show tf-nightly-gpu) == *tf-nightly-gpu* ]]; then
+   if [[ $(python3.7 -m pip show tensorflow-gpu) == *tensorflow-gpu* ]] || [[ $(python3.7 -m pip show tf-nightly-gpu) == *tf-nightly-gpu* ]]; then
     echo 'Using installed tensorflow-gpu'
   else
     # Uninstall CPU version if it is installed.
-    if [[ $(pip show tensorflow) == *tensorflow* ]]; then
+    if [[ $(python3.7 -m pip show tensorflow) == *tensorflow* ]]; then
       echo 'Already have tensorflow non-gpu installed. Uninstalling......\n'
       pip uninstall tensorflow
-    elif [[ $(pip show tf-nightly) == *tf-nightly* ]]; then
+    elif [[ $(python3.7 -m pip show tf-nightly) == *tf-nightly* ]]; then
       echo 'Already have tensorflow non-gpu installed. Uninstalling......\n'
       pip uninstall tf-nightly
     fi
     # Install CPU version
     echo 'Installing tensorflow-gpu .....\n'
-    pip install tensorflow-gpu
+    python3.7 -m pip install tensorflow-gpu
   fi
 fi
 
 
-TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
-TF_LFLAGS="$(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
+TF_CFLAGS=( $(python3.7 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+TF_LFLAGS="$(python3.7 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
 
 write_to_bazelrc "build:cuda --define=using_cuda=true --define=using_cuda_nvcc=true"
 write_to_bazelrc "build:cuda --crosstool_top=@local_config_cuda//crosstool:toolchain"
