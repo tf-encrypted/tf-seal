@@ -79,67 +79,56 @@ Status LookupOrCreateWrapper(OpKernelContext* ctx,
                                                      });
 }
 
-class SealSavePublicKeyOp : public OpKernel {
-  public:
-   explicit SealSavePublicKeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {
-
-   }
+class SealSavePbOp : public OpKernel {
+ public:
+  explicit SealSavePbOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
 
-   void Compute(OpKernelContext* ctx) override {
+  void Compute(OpKernelContext* ctx) override {
       const PublicKeysVariant* key = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
       Tensor* out0;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::PublicKey publicKey(key->public_key);
     std::filebuf fb;
-    fb.open("public_key",std::ios::out);
+    fb.open("public_key", std::ios::out);
     std::ostream pubk(&fb);
     publicKey.save(pubk);
-
-   }
-
+  }
 };
 
 
-class SealSaveSecretKeyOp : public OpKernel {
-  public:
-   explicit SealSaveSecretKeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {
+class SealSaveScOp : public OpKernel {
+ public:
+  explicit SealSaveScOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
-   }
-
-   void Compute(OpKernelContext* ctx) override {
+  void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* secretkey = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &secretkey));
     Tensor* out0;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::SecretKey secretKey(secretkey->key);
     std::filebuf fb;
-    fb.open("secret_key",std::ios::out);
+    fb.open("secret_key", std::ios::out);
     std::ostream pubk(&fb);
     secretKey.save(pubk);
-   }
-
+  }
 };
 
-
 class SealSaveCipherTextOp: public OpKernel {
-  public:
-   explicit SealSaveCipherTextOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
-
-   }
-   void Compute(OpKernelContext* ctx) override {
+ public:
+  explicit SealSaveCipherTextOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
+  void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* a = nullptr;
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
-    Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
-     //seal::CipherText ciphertext(secretkey->key);
-    //std::filebuf fb;
-    //fb.open("ciphertext",std::ios::out);
-    //std::ostream ciph(&fb);
-    //secretKey.save(ciph); 
-
-   }
+     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
+     Tensor* out0;
+     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+     // seal::CipherText ciphertext(secretkey->key);
+     // std::filebuf fb;
+     // fb.open("ciphertext",std::ios::out);
+     // std::ostream ciph(&fb);
+     // secretKey.save(ciph);
+  }
 };
 
 class SealKeyGenOp : public OpKernel {
@@ -544,9 +533,12 @@ class SealMatMulPlainOp : public OpKernel {
   }
 };
 
-// Not quite a fully generic PolyEval algorithm. It only supports up to four coefficients
-// The main issue here is optimizing the computations so that we can keep the poly modulus
-// degree low. As the poly modulus degree increases the performance decreases.
+// Not quite a fully generic PolyEval algorithm. It only supports
+// up to four coefficients
+// The main issue here is optimizing the computations so that we
+// can keep the poly modulus
+// degree low. As the poly modulus degree increases the performance
+// decreases.
 template <typename T>
 class SealPolyEvalOp : public OpKernel {
  public:
@@ -667,8 +659,8 @@ class SealPolyEvalOp : public OpKernel {
 REGISTER_GENERIC_OPS(float);
 REGISTER_GENERIC_OPS(double);
 
-REGISTER_KERNEL_BUILDER(Name("SealSaveSecretKey").Device(DEVICE_CPU), SealSaveSecretKeyOp);
-REGISTER_KERNEL_BUILDER(Name("SealSavePublicKey").Device(DEVICE_CPU), SealSavePublicKeyOp);
+REGISTER_KERNEL_BUILDER(Name("SealSaveSc").Device(DEVICE_CPU), SealSaveScOp);
+REGISTER_KERNEL_BUILDER(Name("SealSavePb").Device(DEVICE_CPU), SealSavePbOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);
