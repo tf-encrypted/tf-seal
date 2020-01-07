@@ -79,9 +79,9 @@ Status LookupOrCreateWrapper(OpKernelContext* ctx,
                                                      });
 }
 
-class SealSavePbOp : public OpKernel {
+class SealSavePublickeyOp : public OpKernel {
  public:
-  explicit SealSavePbOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
+  explicit SealSavePublickeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
 
   void Compute(OpKernelContext* ctx) override {
@@ -94,13 +94,14 @@ class SealSavePbOp : public OpKernel {
     fb.open("public_key", std::ios::out);
     std::ostream pubk(&fb);
     publicKey.save(pubk);
+    fb.close();
   }
 };
 
 
-class SealSaveScOp : public OpKernel {
+class SealSaveSecretkeyOp : public OpKernel {
  public:
-  explicit SealSaveScOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
+  explicit SealSaveSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
   void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* secretkey = nullptr;
@@ -112,6 +113,7 @@ class SealSaveScOp : public OpKernel {
     fb.open("secret_key", std::ios::out);
     std::ostream pubk(&fb);
     secretKey.save(pubk);
+    fb.close();
   }
 };
 
@@ -659,8 +661,8 @@ class SealPolyEvalOp : public OpKernel {
 REGISTER_GENERIC_OPS(float);
 REGISTER_GENERIC_OPS(double);
 
-REGISTER_KERNEL_BUILDER(Name("SealSaveSc").Device(DEVICE_CPU), SealSaveScOp);
-REGISTER_KERNEL_BUILDER(Name("SealSavePb").Device(DEVICE_CPU), SealSavePbOp);
+REGISTER_KERNEL_BUILDER(Name("SealSaveSecretkey").Device(DEVICE_CPU), SealSaveSecretkeyOp);
+REGISTER_KERNEL_BUILDER(Name("SealSavePublickey").Device(DEVICE_CPU), SealSavePublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);

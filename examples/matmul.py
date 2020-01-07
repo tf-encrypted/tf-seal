@@ -24,5 +24,3 @@ c_encrypted = tfs.matmul(a_encrypted, b_encrypted)
 with tf.Session() as sess:
     expected, actual = sess.run([c, c_encrypted])
     np.testing.assert_almost_equal(actual, expected, decimal=3)
-    print(expected)
-    print(actual)

@@ -73,12 +73,12 @@ REGISTER_OP("SealPolyEval")
     .Output("out: variant")
     .SetIsStateful();
 
-REGISTER_OP("SavePb")
+REGISTER_OP("SealSavePublickey")
     .Input("pub_key: variant")
     .Output("out:variant")
     .SetIsStateful();
 
-REGISTER_OP("SaveSc")
+REGISTER_OP("SaveSecretkey")
     .Input("secretkey: variant")
     .Output("out:variant")
     .SetIsStateful();
