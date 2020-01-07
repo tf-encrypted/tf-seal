@@ -56,7 +56,7 @@ function main() {
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
 
-  python3.7 setup.py bdist_wheel --plat-name=${PYPI_PLATFORM} > /dev/null
+  python setup.py bdist_wheel --plat-name=${PYPI_PLATFORM} > /dev/null
 
   cp dist/*.whl "${DEST}"
   popd
