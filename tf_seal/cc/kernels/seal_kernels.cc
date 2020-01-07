@@ -89,7 +89,8 @@ class SealSavePublicKeyOp : public OpKernel {
    void Compute(OpKernelContext* ctx) override {
       const PublicKeysVariant* key = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-
+      Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::PublicKey publicKey(key->public_key);
     std::filebuf fb;
     fb.open("public_key",std::ios::out);
@@ -100,22 +101,6 @@ class SealSavePublicKeyOp : public OpKernel {
 
 };
 
-class SealLoadPublicKeyOp : public OpKernel {
-  public:
-   explicit SealLoadPublicKeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {
-
-   }
-
-   
-   void Compute(OpKernelContext* ctx) override {
-    seal::PublicKey pub;
-    RefCountPtr<Context> context;
-    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-    std::ifstream is ("public_key",std::ifstream::binary);
-    pub.load(context->context,is);
-   }
-
-};
 
 class SealSaveSecretKeyOp : public OpKernel {
   public:
@@ -126,7 +111,8 @@ class SealSaveSecretKeyOp : public OpKernel {
    void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* secretkey = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &secretkey));
-
+    Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::SecretKey secretKey(secretkey->key);
     std::filebuf fb;
     fb.open("secret_key",std::ios::out);
@@ -136,21 +122,6 @@ class SealSaveSecretKeyOp : public OpKernel {
 
 };
 
-class SealLoadSecretKeyOp : public OpKernel {
-  public:
-   explicit SealLoadSecretKeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {
-
-   }
-
-   void Compute(OpKernelContext* ctx) override {
-    seal::SecretKey sec;
-    RefCountPtr<Context> context;
-    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-    std::ifstream is ("secret_key",std::ifstream::binary);
-    sec.load(context->context,is);
-   }
-
-};
 
 class SealSaveCipherTextOp: public OpKernel {
   public:
@@ -160,7 +131,8 @@ class SealSaveCipherTextOp: public OpKernel {
    void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* a = nullptr;
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
-
+    Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
      //seal::CipherText ciphertext(secretkey->key);
     //std::filebuf fb;
     //fb.open("ciphertext",std::ios::out);

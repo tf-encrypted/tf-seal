@@ -19,13 +19,13 @@ public_keys, secret_key = tfs.seal_key_gen(gen_relin=True, gen_galois=True)
 # encrypted input -> tf_seal.Tensor
 a_plain = np.random.normal(size=(20, 20)).astype(np.float32)
 a = tfs.constant(a_plain, secret_key, public_keys)
+
 # public weights
 b = np.random.normal(size=(20, 20)).astype(np.float32)
 
 c = tfs.matmul(a, b.transpose())
-
 d = sigmoid(c)
-print(d)
+
 # get answer from tensorflow to compare
 tf_d = tf_log_reg(a_plain, b)
 

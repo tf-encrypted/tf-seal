@@ -75,25 +75,15 @@ REGISTER_OP("SealPolyEval")
 
 REGISTER_OP("SavePublicKey")
     .Input("pub_key: variant")
-    .Output("out:stream")
+    .Output("out:variant")
     .SetIsStateful();
 
 REGISTER_OP("SaveSecretKey")
     .Input("secretkey: variant")
-    .Output("out:stream")
+    .Output("out:variant")
     .SetIsStateful();
 
 REGISTER_OP("SaveCipherText")
     .Input("a: variant")
-    .Output("out:stream")
-    .SetIsStateful();
-    
-REGISTER_OP("LoadPublicKey")
-    .Input("a: stream")
-    .Output("pub_key:variant")
-    .SetIsStateful();
-
-REGISTER_OP("LoadSecretKey")
-    .Input("a: variant")
-    .Output("sec_key:variant")
+    .Output("out:variant")
     .SetIsStateful();
