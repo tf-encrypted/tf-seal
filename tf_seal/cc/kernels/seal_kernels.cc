@@ -106,6 +106,65 @@ class SealSavePublickeyOp : public OpKernel {
   }
 };
 
+class SealLoadPublickeyOp : public OpKernel {
+ public:
+  explicit SealLoadPublickeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
+
+
+  void Compute(OpKernelContext* ctx) override {
+      const PublicKeysVariant* key = nullptr;
+      const Tensor* input_tensor;
+      // const Tensor& input_tensor=ctx->input(0);
+      // std::string input = input_tensor.flat<std::string>();
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
+    const auto& input_flat = input_tensor->flat<std::string>();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+    // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
+      Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    seal::PublicKey publicKey;
+    // std::filebuf fb;
+    std::string f = input_flat(0);
+    char *cstr = new char[f.length() + 1];
+    strcpy(cstr, f.c_str());
+    // fb.open(cstr, std::ios::out);
+     std::ifstream pubk (cstr, std::ifstream::in);
+    // std::ifstream pubk(*fb);
+    publicKey.load(context->context,pubk);
+    pubk.close();
+  }
+};
+
+class SealLoadSecretkeyOp : public OpKernel {
+ public:
+  explicit SealLoadSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
+
+
+  void Compute(OpKernelContext* ctx) override {
+      //const SecretKeysVariant* key = nullptr;
+      const Tensor* input_tensor;
+      // const Tensor& input_tensor=ctx->input(0);
+      // std::string input = input_tensor.flat<std::string>();
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
+    const auto& input_flat = input_tensor->flat<std::string>();
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+    // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
+      Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    seal::SecretKey secretKey;
+    // std::filebuf fb;
+    std::string f = input_flat(0);
+    char *cstr = new char[f.length() + 1];
+    strcpy(cstr, f.c_str());
+    // fb.open(cstr, std::ios::out);
+     std::ifstream seck (cstr, std::ifstream::in);
+    // std::ifstream pubk(*fb);
+    secretKey.load(context->context,seck);
+    seck.close();
+  }
+};
 
 class SealSaveSecretkeyOp : public OpKernel {
  public:
@@ -679,6 +738,8 @@ REGISTER_GENERIC_OPS(double);
 
 REGISTER_KERNEL_BUILDER(Name("SealSaveSecretkey").Device(DEVICE_CPU), SealSaveSecretkeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealSavePublickey").Device(DEVICE_CPU), SealSavePublickeyOp);
+REGISTER_KERNEL_BUILDER(Name("SealLoadPublickey").Device(DEVICE_CPU), SealLoadPublickeyOp);
+REGISTER_KERNEL_BUILDER(Name("SealLoadSecretkey").Device(DEVICE_CPU), SealLoadSecretkeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);

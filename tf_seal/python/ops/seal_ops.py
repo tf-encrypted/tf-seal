@@ -14,3 +14,5 @@ seal_key_gen = seal_ops.seal_key_gen
 seal_mat_mul = seal_ops.seal_mat_mul
 seal_mat_mul_plain = seal_ops.seal_mat_mul_plain
 seal_poly_eval = seal_ops.seal_poly_eval
+seal_save_secretkey = seal_ops.seal_save_secretkey
+seal_save_publickey = seal_ops.seal_save_publickey
