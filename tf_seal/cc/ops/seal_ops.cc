@@ -79,7 +79,7 @@ REGISTER_OP("SealSavePublickey")
     .Output("out:variant")
     .SetIsStateful();
 
-REGISTER_OP("SaveSecretkey")
+REGISTER_OP("SealSaveSecretkey")
     .Input("filename: string")
     .Input("secretkey: variant")
     .Output("out:variant")
