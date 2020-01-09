@@ -92,8 +92,8 @@ class SealSavePublickeyOp : public OpKernel {
     OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
     const auto& input_flat = input_tensor->flat<std::string>();
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-      Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    //  Tensor* out0;
+    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::PublicKey publicKey(key->public_key);
     std::filebuf fb;
     std::string f = input_flat(0);
@@ -112,7 +112,7 @@ class SealLoadPublickeyOp : public OpKernel {
 
 
   void Compute(OpKernelContext* ctx) override {
-      const PublicKeysVariant* key = nullptr;
+      // const PublicKeysVariant* key = nullptr;
       const Tensor* input_tensor;
       // const Tensor& input_tensor=ctx->input(0);
       // std::string input = input_tensor.flat<std::string>();
@@ -121,8 +121,8 @@ class SealLoadPublickeyOp : public OpKernel {
     RefCountPtr<Context> context;
     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
     // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-      Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    //  Tensor* out0;
+    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::PublicKey publicKey;
     // std::filebuf fb;
     std::string f = input_flat(0);
@@ -151,8 +151,8 @@ class SealLoadSecretkeyOp : public OpKernel {
     RefCountPtr<Context> context;
     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
     // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-      Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    //  Tensor* out0;
+    //OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::SecretKey secretKey;
     // std::filebuf fb;
     std::string f = input_flat(0);
@@ -178,14 +178,14 @@ class SealSaveSecretkeyOp : public OpKernel {
       const auto& input_flat = input_tensor->flat<std::string>();
     OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &secretkey));
-    Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    // Tensor* out0;
+    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
     seal::SecretKey secretKey(secretkey->key);
     std::filebuf fb;
     std::string f = input_flat(0);
     char *cstr = new char[f.length() + 1];
     strcpy(cstr, f.c_str());
-    fb.open(cstr, std::ios::out);
+    fb.open(cstr, std::ios::out|std::ios::binary|std::ios::trunc);
     std::ostream seck(&fb);
     secretKey.save(seck);
     fb.close();
@@ -198,8 +198,8 @@ class SealSaveCipherTextOp: public OpKernel {
   void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* a = nullptr;
      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
-     Tensor* out0;
-     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+     // Tensor* out0;
+     // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
      // seal::CipherText ciphertext(secretkey->key);
      // std::filebuf fb;
      // fb.open("ciphertext",std::ios::out);
