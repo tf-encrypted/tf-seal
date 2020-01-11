@@ -87,17 +87,20 @@ class SealSavePublickeyOp : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
       const PublicKeysVariant* key = nullptr;
       const Tensor* input_tensor;
-      OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
-      const auto& input_flat = input_tensor->flat<std::string>();
-      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
- 
-      seal::PublicKey publicKey(key->public_key);
-      std::filebuf fb;
-      std::string f = input_flat(0);
-      char *cstr = new char[f.length() + 1];
-      strcpy(cstr, f.c_str());
-      fb.open(cstr, std::ios::out);
-      std::ostream pubk(&fb);
+      // const Tensor& input_tensor=ctx->input(0);
+      // std::string input = input_tensor.flat<std::string>();
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
+    const auto& input_flat = input_tensor->flat<std::string>();
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
+    //  Tensor* out0;
+    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+    seal::PublicKey publicKey(key->public_key);
+    std::filebuf fb;
+    std::string f = input_flat(0);
+    char *cstr = new char[f.length() + 1];
+    strcpy(cstr, f.c_str());
+    fb.open(cstr, std::ios::out);
+    std::ostream pubk(&fb);
     publicKey.save(pubk);
     fb.close();
   }
@@ -214,6 +217,50 @@ class SealKeyGenOp : public OpKernel {
   }
 
   void Compute(OpKernelContext* ctx) override {
+    Tensor* out0;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+
+    Tensor* out1;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
+
+    RefCountPtr<Context> context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+
+    seal::KeyGenerator gen(context->context);
+
+    PublicKeysVariant pub_keys;
+
+    if (gen_public) {
+      pub_keys.public_key = gen.public_key();
+    }
+
+    if (gen_relin) {
+      pub_keys.relin_keys = gen.relin_keys();
+    }
+
+    if (gen_galois) {
+      pub_keys.galois_keys = gen.galois_keys();
+    }
+
+    out0->scalar<Variant>()() = std::move(pub_keys);
+    out1->scalar<Variant>()() = SecretKeyVariant(gen.secret_key());
+  }
+
+  bool gen_public = true;
+  bool gen_relin = false;
+  bool gen_galois = false;
+};
+
+class SealDummyOp : public OpKernel {
+ public:
+  explicit SealDummyOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_public", &gen_public));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_relin", &gen_relin));
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_galois", &gen_galois));
+  }
+
+  void Compute(OpKernelContext* ctx) override {
+    std::cout<<"Dentro de Dummy"<<std::endl;
     Tensor* out0;
     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
 
@@ -738,6 +785,7 @@ REGISTER_KERNEL_BUILDER(Name("SealSavePublickey").Device(DEVICE_CPU), SealSavePu
 REGISTER_KERNEL_BUILDER(Name("SealLoadPublickey").Device(DEVICE_CPU), SealLoadPublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealLoadSecretkey").Device(DEVICE_CPU), SealLoadSecretkeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
+REGISTER_KERNEL_BUILDER(Name("SealDummy").Device(DEVICE_CPU), SealDummyOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);
 REGISTER_KERNEL_BUILDER(Name("SealMatMul").Device(DEVICE_CPU), SealMatMulOp);

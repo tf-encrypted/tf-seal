@@ -9,6 +9,14 @@ REGISTER_OP("SealKeyGen")
     .Output("sec_key: variant")
     .SetIsStateful();
 
+REGISTER_OP("SealDummy")
+    .Attr("gen_public: bool = True")
+    .Attr("gen_relin: bool = False")
+    .Attr("gen_galois: bool = False")
+    .Output("pub_key: variant")
+    .Output("sec_key: variant")
+    .SetIsStateful();
+
 REGISTER_OP("SealEncrypt")
     .Attr("dtype: {float32, float64}")
     .Input("in: dtype")
@@ -75,8 +83,7 @@ REGISTER_OP("SealPolyEval")
 
 REGISTER_OP("SealSavePublickey")
     .Input("filename: string")
-    .Input("pub_key: variant")    
-    // .Output("out:variant")
+    .Input("pub_key: variant") 
     .SetIsStateful();
 
 REGISTER_OP("SealLoadPublickey")
@@ -87,7 +94,6 @@ REGISTER_OP("SealLoadPublickey")
 REGISTER_OP("SealSaveSecretkey")
     .Input("filename: string")
     .Input("secretkey: variant")
-    // .Output("out:variant")
     .SetIsStateful();
 
 REGISTER_OP("SealLoadSecretkey")
@@ -95,12 +101,12 @@ REGISTER_OP("SealLoadSecretkey")
     .Input("filename: string")
     .SetIsStateful();
 
-REGISTER_OP("SaveCipherText")
+REGISTER_OP("SealSaveCipherText")
     .Input("filename: string")
     .Input("a: variant")
     .SetIsStateful();
 
-REGISTER_OP("LoadCipherText")
+REGISTER_OP("SealLoadCipherText")
     .Input("a: variant")
     .Input("filename: string")
     .SetIsStateful();
