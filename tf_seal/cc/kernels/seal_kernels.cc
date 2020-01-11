@@ -87,20 +87,17 @@ class SealSavePublickeyOp : public OpKernel {
   void Compute(OpKernelContext* ctx) override {
       const PublicKeysVariant* key = nullptr;
       const Tensor* input_tensor;
-      // const Tensor& input_tensor=ctx->input(0);
-      // std::string input = input_tensor.flat<std::string>();
-    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
-    const auto& input_flat = input_tensor->flat<std::string>();
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-    //  Tensor* out0;
-    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
-    seal::PublicKey publicKey(key->public_key);
-    std::filebuf fb;
-    std::string f = input_flat(0);
-    char *cstr = new char[f.length() + 1];
-    strcpy(cstr, f.c_str());
-    fb.open(cstr, std::ios::out);
-    std::ostream pubk(&fb);
+      OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
+      const auto& input_flat = input_tensor->flat<std::string>();
+      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
+ 
+      seal::PublicKey publicKey(key->public_key);
+      std::filebuf fb;
+      std::string f = input_flat(0);
+      char *cstr = new char[f.length() + 1];
+      strcpy(cstr, f.c_str());
+      fb.open(cstr, std::ios::out);
+      std::ostream pubk(&fb);
     publicKey.save(pubk);
     fb.close();
   }
