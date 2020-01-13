@@ -192,9 +192,9 @@ class SealSaveSecretkeyOp : public OpKernel {
   }
 };
 
-class SealSaveCipherTextOp: public OpKernel {
+class SealSaveCiphertextOp: public OpKernel {
  public:
-  explicit SealSaveCipherTextOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
+  explicit SealSaveCiphertextOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
   void Compute(OpKernelContext* ctx) override {
      const SecretKeyVariant* a = nullptr;
      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
@@ -654,12 +654,10 @@ class SealMatMulPlainOp : public OpKernel {
   }
 };
 
-// Not quite a fully generic PolyEval algorithm. It only supports
-// up to four coefficients
-// The main issue here is optimizing the computations so that we
-// can keep the poly modulus
-// degree low. As the poly modulus degree increases the performance
-// decreases.
+// Not quite a fully generic PolyEval algorithm. It only supports up to four
+// coefficients. The main issue here is optimizing the computations so that we
+// can keep the poly modulus degree low. As the poly modulus degree increases
+// the performance decreases.
 template <typename T>
 class SealPolyEvalOp : public OpKernel {
  public:

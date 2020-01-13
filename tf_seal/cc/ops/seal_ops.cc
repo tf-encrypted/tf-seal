@@ -101,12 +101,12 @@ REGISTER_OP("SealLoadSecretkey")
     .Input("filename: string")
     .SetIsStateful();
 
-REGISTER_OP("SealSaveCipherText")
+REGISTER_OP("SealSaveCiphertext")
     .Input("filename: string")
-    .Input("a: variant")
+    .Input("ciphertext: variant")
     .SetIsStateful();
 
-REGISTER_OP("SealLoadCipherText")
+REGISTER_OP("SealLoadCiphertext")
     .Input("a: variant")
     .Input("filename: string")
     .SetIsStateful();
