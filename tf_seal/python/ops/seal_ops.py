@@ -19,5 +19,3 @@ seal_mul_plain = seal_ops.seal_mul_plain
 seal_mat_mul = seal_ops.seal_mat_mul
 seal_mat_mul_plain = seal_ops.seal_mat_mul_plain
 seal_poly_eval = seal_ops.seal_poly_eval
-
-seal_dummy = seal_ops.seal_dummy
