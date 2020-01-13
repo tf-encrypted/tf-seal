@@ -6,6 +6,7 @@ seal_ops = load_library.load_op_library(op_lib_file)
 
 seal_key_gen = seal_ops.seal_key_gen
 seal_save_publickey = seal_ops.seal_save_publickey
+seal_load_publickey = seal_ops.seal_load_publickey
 seal_save_secretkey = seal_ops.seal_save_secretkey
 
 seal_encrypt = seal_ops.seal_encrypt

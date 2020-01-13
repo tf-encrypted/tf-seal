@@ -8,6 +8,7 @@ from tensorflow.python.framework.errors import InvalidArgumentError
 
 from tf_seal.python.ops.seal_ops import seal_key_gen
 from tf_seal.python.ops.seal_ops import seal_save_publickey
+from tf_seal.python.ops.seal_ops import seal_load_publickey
 
 from tf_seal.python.ops.seal_ops import seal_encrypt
 from tf_seal.python.ops.seal_ops import seal_decrypt
@@ -36,6 +37,22 @@ class SealTest(test.TestCase):
     assert os.path.getsize(tmp_filename) > 100, \
         "File smaller than expected: '{}', size: {}".format(
             tmp_filename, os.path.getsize(tmp_filename))
+
+    os.remove(tmp_filename)
+
+  def test_load_pubkey(self):
+    _, tmp_filename = tempfile.mkstemp()
+
+    with tf.Session() as sess:
+      pubkey, _ = seal_key_gen()
+
+      save_op = seal_save_publickey(tmp_filename, pubkey)
+      sess.run(save_op)
+
+      pubkey = seal_load_publickey(tmp_filename)
+      sess.run(pubkey.op)
+
+    # TODO: we should assert something about the loaded pubkey
 
     os.remove(tmp_filename)
 

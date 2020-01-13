@@ -108,29 +108,31 @@ class SealLoadPublickeyOp : public OpKernel {
  public:
   explicit SealLoadPublickeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
-
   void Compute(OpKernelContext* ctx) override {
-      // const PublicKeysVariant* key = nullptr;
-      const Tensor* input_tensor;
-      // const Tensor& input_tensor=ctx->input(0);
-      // std::string input = input_tensor.flat<std::string>();
-    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
-    const auto& input_flat = input_tensor->flat<std::string>();
+    const Tensor* filename_tensor;
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+    const std::string filename = filename_tensor->flat<std::string>()(0);
+
+    Tensor* pub_key;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &pub_key));
+    PublicKeysVariant keys;
+
     RefCountPtr<Context> context;
     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-    // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-    //  Tensor* out0;
-    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+
+    // TODO: we could potentially move this logic to PublicKeysVariant instead
+    // since we'll probably want to load some of the other keys as well..?
     seal::PublicKey publicKey;
-    // std::filebuf fb;
-    std::string f = input_flat(0);
-    char *cstr = new char[f.length() + 1];
-    strcpy(cstr, f.c_str());
-    // fb.open(cstr, std::ios::out);
-     std::ifstream pubk (cstr, std::ifstream::in);
-    // std::ifstream pubk(*fb);
-    publicKey.load(context->context,pubk);
-    pubk.close();
+    std::ifstream file (filename);
+    if (file.is_open()) {
+      publicKey.load(context->context, file);
+      keys.public_key = publicKey;
+      file.close();
+    } else {
+      // TODO report failure
+    }
+
+    pub_key->scalar<Variant>()() = std::move(pub_key);
   }
 };
 

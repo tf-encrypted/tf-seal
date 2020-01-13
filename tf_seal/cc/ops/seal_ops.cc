@@ -87,8 +87,8 @@ REGISTER_OP("SealSavePublickey")
     .SetIsStateful();
 
 REGISTER_OP("SealLoadPublickey")
-    .Input("a: variant")
     .Input("filename: string")
+    .Output("pub_key: variant")
     .SetIsStateful();
 
 REGISTER_OP("SealSaveSecretkey")
