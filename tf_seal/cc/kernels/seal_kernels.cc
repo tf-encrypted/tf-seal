@@ -170,24 +170,21 @@ class SealSaveSecretkeyOp : public OpKernel {
   explicit SealSaveSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
   void Compute(OpKernelContext* ctx) override {
-    const SecretKeyVariant* secretkey = nullptr;
-    const Tensor* input_tensor;
-    // const Tensor& input_tensor=ctx->input(0);
-    // std::string input = input_tensor.flat<std::string>();
-    const auto& input_flat = input_tensor->flat<std::string>();
-    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
-    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &secretkey));
-    // Tensor* out0;
-    // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
-    seal::SecretKey secretKey(secretkey->key);
-    std::filebuf fb;
-    std::string f = input_flat(0);
-    char *cstr = new char[f.length() + 1];
-    strcpy(cstr, f.c_str());
-    fb.open(cstr, std::ios::out|std::ios::binary|std::ios::trunc);
-    std::ostream seck(&fb);
-    secretKey.save(seck);
-    fb.close();
+    const Tensor* filename_tensor;
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+    const std::string filename = filename_tensor->flat<std::string>()(0);
+
+    const SecretKeyVariant* keys = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &keys));
+    const seal::SecretKey sec_key(keys->key);
+
+    std::ofstream file(filename, std::ios::out);
+    if (file.is_open()) {
+      sec_key.save(file);
+      file.close();
+    } else {
+      // TODO: report failure
+    }
   }
 };
 
