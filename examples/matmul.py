@@ -5,8 +5,8 @@ import tf_seal as tfs
 public_keys, secret_key = tfs.seal_key_gen(gen_relin=True, gen_galois=True)
 
 # sample inputs in the form of tf.Tensors
-a = tf.random.normal(shape=(20, 20), dtype=tf.float32)
-b = tf.random.normal(shape=(20, 20), dtype=tf.float32)
+a = tf.random.normal(shape=(2, 3), dtype=tf.float32)
+b = tf.random.normal(shape=(2, 3), dtype=tf.float32)
 
 # the plaintext equivalent of our computation
 c = tf.matmul(a, tf.transpose(b))
