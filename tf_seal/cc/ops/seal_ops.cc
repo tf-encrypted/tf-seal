@@ -9,14 +9,6 @@ REGISTER_OP("SealKeyGen")
     .Output("sec_key: variant")
     .SetIsStateful();
 
-REGISTER_OP("SealDummy")
-    .Attr("gen_public: bool = True")
-    .Attr("gen_relin: bool = False")
-    .Attr("gen_galois: bool = False")
-    .Output("pub_key: variant")
-    .Output("sec_key: variant")
-    .SetIsStateful();
-
 REGISTER_OP("SealEncrypt")
     .Attr("dtype: {float32, float64}")
     .Input("in: dtype")
