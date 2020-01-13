@@ -1,7 +1,13 @@
+import os
+import tempfile
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import test
 from tensorflow.python.framework.errors import InvalidArgumentError
+
+from tf_seal.python.ops.seal_ops import seal_key_gen
+from tf_seal.python.ops.seal_ops import seal_save_publickey
 
 from tf_seal.python.ops.seal_ops import seal_encrypt
 from tf_seal.python.ops.seal_ops import seal_decrypt
@@ -9,13 +15,29 @@ from tf_seal.python.ops.seal_ops import seal_add
 from tf_seal.python.ops.seal_ops import seal_add_plain
 from tf_seal.python.ops.seal_ops import seal_mul
 from tf_seal.python.ops.seal_ops import seal_mul_plain
-from tf_seal.python.ops.seal_ops import seal_key_gen
 from tf_seal.python.ops.seal_ops import seal_mat_mul
 from tf_seal.python.ops.seal_ops import seal_mat_mul_plain
 from tf_seal.python.ops.seal_ops import seal_poly_eval
 
 class SealTest(test.TestCase):
   """SealTest test"""
+
+  def test_save_pubkey(self):
+    _, tmp_filename = tempfile.mkstemp()
+
+    with tf.Session() as sess:
+      pubkey, _ = seal_key_gen()
+      save_op = seal_save_publickey(tmp_filename, pubkey)
+      sess.run(save_op)
+
+    assert os.path.isfile(tmp_filename), \
+        "Did not find expected file: '{}'".format(
+            tmp_filename)
+    assert os.path.getsize(tmp_filename) > 100, \
+        "File smaller than expected: '{}', size: {}".format(
+            tmp_filename, os.path.getsize(tmp_filename))
+
+    os.remove(tmp_filename)
 
   def test_encrypt_decrypt(self):
     with tf.Session() as sess:
