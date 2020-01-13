@@ -140,12 +140,11 @@ class SealLoadSecretkeyOp : public OpKernel {
  public:
   explicit SealLoadSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
-
   void Compute(OpKernelContext* ctx) override {
-      //const SecretKeysVariant* key = nullptr;
-      const Tensor* input_tensor;
-      // const Tensor& input_tensor=ctx->input(0);
-      // std::string input = input_tensor.flat<std::string>();
+    //const SecretKeysVariant* key = nullptr;
+    const Tensor* input_tensor;
+    // const Tensor& input_tensor=ctx->input(0);
+    // std::string input = input_tensor.flat<std::string>();
     OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
     const auto& input_flat = input_tensor->flat<std::string>();
     RefCountPtr<Context> context;
@@ -171,11 +170,11 @@ class SealSaveSecretkeyOp : public OpKernel {
   explicit SealSaveSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
   void Compute(OpKernelContext* ctx) override {
-     const SecretKeyVariant* secretkey = nullptr;
-     const Tensor* input_tensor;
-      // const Tensor& input_tensor=ctx->input(0);
-      // std::string input = input_tensor.flat<std::string>();
-      const auto& input_flat = input_tensor->flat<std::string>();
+    const SecretKeyVariant* secretkey = nullptr;
+    const Tensor* input_tensor;
+    // const Tensor& input_tensor=ctx->input(0);
+    // std::string input = input_tensor.flat<std::string>();
+    const auto& input_flat = input_tensor->flat<std::string>();
     OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &secretkey));
     // Tensor* out0;
