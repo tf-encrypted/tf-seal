@@ -78,6 +78,16 @@ REGISTER_OP("SealSavePublickey")
     .Input("pub_key: variant") 
     .SetIsStateful();
 
+REGISTER_OP("SealSaveCipher")
+    .Input("filename: string")
+    .Input("cipher: variant") 
+    .SetIsStateful();
+
+REGISTER_OP("SealLoadCipher")
+    .Input("filename: string")
+    .Output("cipher: variant")
+    .SetIsStateful();
+
 REGISTER_OP("SealLoadPublickey")
     .Input("filename: string")
     .Output("pub_key: variant")
@@ -89,8 +99,8 @@ REGISTER_OP("SealSaveSecretkey")
     .SetIsStateful();
 
 REGISTER_OP("SealLoadSecretkey")
-    .Input("a: variant")
     .Input("filename: string")
+    .Output("sec_key: variant")
     .SetIsStateful();
 
 REGISTER_OP("SealSaveCiphertext")

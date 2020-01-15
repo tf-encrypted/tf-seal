@@ -9,7 +9,9 @@ from tensorflow.python.framework.errors import InvalidArgumentError
 from tf_seal.python.ops.seal_ops import seal_key_gen
 from tf_seal.python.ops.seal_ops import seal_save_publickey
 from tf_seal.python.ops.seal_ops import seal_load_publickey
-
+from tf_seal.python.ops.seal_ops import seal_save_secretkey
+from tf_seal.python.ops.seal_ops import seal_load_secretkey
+from tf_seal.python.ops.seal_ops import seal_save_cipher
 from tf_seal.python.ops.seal_ops import seal_encrypt
 from tf_seal.python.ops.seal_ops import seal_decrypt
 from tf_seal.python.ops.seal_ops import seal_add
@@ -29,6 +31,25 @@ class SealTest(test.TestCase):
     with tf.Session() as sess:
       pubkey, _ = seal_key_gen()
       save_op = seal_save_publickey(tmp_filename, pubkey)
+      print(tmp_filename)
+      sess.run(save_op)
+
+    assert os.path.isfile(tmp_filename), \
+        "Did not find expected file: '{}'".format(
+            tmp_filename)
+    assert os.path.getsize(tmp_filename) > 100, \
+        "File smaller than expected: '{}', size: {}".format(
+            tmp_filename, os.path.getsize(tmp_filename))
+
+    os.remove(tmp_filename)
+
+  def test_save_seckey(self):
+    _, tmp_filename = tempfile.mkstemp()
+
+    with tf.Session() as sess:
+      _ , sec_key = seal_key_gen()
+      save_op = seal_save_secretkey(tmp_filename, sec_key)
+      print(tmp_filename)
       sess.run(save_op)
 
     assert os.path.isfile(tmp_filename), \
@@ -56,6 +77,22 @@ class SealTest(test.TestCase):
 
     os.remove(tmp_filename)
 
+  def test_load_seckey(self):
+    _, tmp_filename = tempfile.mkstemp()
+
+    with tf.Session() as sess:
+      _ , seckey = seal_key_gen()
+
+      save_op = seal_save_secretkey(tmp_filename, seckey)
+      sess.run(save_op)
+
+      seckey = seal_load_secretkey(tmp_filename)
+      sess.run(seckey.op)
+
+    # TODO: we should assert something about the loaded pubkey
+
+    os.remove(tmp_filename)
+
   def test_encrypt_decrypt(self):
     with tf.Session() as sess:
       inp = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
@@ -64,6 +101,17 @@ class SealTest(test.TestCase):
       ans = seal_decrypt(variant, sec_key, tf.float32)
 
       np.testing.assert_equal(sess.run(ans), inp)
+
+  def test_save_cipher(self):
+
+    _, tmp_filename = tempfile.mkstemp()
+
+    with tf.Session() as sess:
+      inp = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
+      pub_key , _  = seal_key_gen()
+      variant = seal_encrypt(inp, pub_key)
+      ans = seal_save_cipher(tmp_filename,variant)
+      sess.run(ans)
 
   def test_add(self):
     with tf.Session() as sess:

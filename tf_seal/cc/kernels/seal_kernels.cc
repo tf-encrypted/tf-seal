@@ -99,7 +99,8 @@ class SealSavePublickeyOp : public OpKernel {
       pub_key.save(file);
       file.close();
     } else {
-      // TODO: report failure
+        std::cout << "Error opening file!" << std::endl;
+        exit(1);
     }
   }
 };
@@ -129,7 +130,8 @@ class SealLoadPublickeyOp : public OpKernel {
       keys.public_key = publicKey;
       file.close();
     } else {
-      // TODO report failure
+        std::cout << "Error opening file!" << std::endl;
+        exit(1);
     }
 
     pub_key->scalar<Variant>()() = std::move(pub_key);
@@ -141,27 +143,31 @@ class SealLoadSecretkeyOp : public OpKernel {
   explicit SealLoadSecretkeyOp(OpKernelConstruction* ctx): OpKernel(ctx) {}
 
   void Compute(OpKernelContext* ctx) override {
-    //const SecretKeysVariant* key = nullptr;
-    const Tensor* input_tensor;
-    // const Tensor& input_tensor=ctx->input(0);
-    // std::string input = input_tensor.flat<std::string>();
-    OP_REQUIRES_OK(ctx, ctx->input("filename", &input_tensor));
-    const auto& input_flat = input_tensor->flat<std::string>();
+    const Tensor* filename_tensor;
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+    const std::string filename = filename_tensor->flat<std::string>()(0);
+
+    Tensor* sec_key;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &sec_key));
+    
     RefCountPtr<Context> context;
     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-    // OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &key));
-    //  Tensor* out0;
-    //OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+
+    // TODO: we could potentially move this logic to PublicKeysVariant instead
+    // since we'll probably want to load some of the other keys as well..?
     seal::SecretKey secretKey;
-    // std::filebuf fb;
-    std::string f = input_flat(0);
-    char *cstr = new char[f.length() + 1];
-    strcpy(cstr, f.c_str());
-    // fb.open(cstr, std::ios::out);
-     std::ifstream seck (cstr, std::ifstream::in);
-    // std::ifstream pubk(*fb);
-    secretKey.load(context->context,seck);
-    seck.close();
+    std::ifstream file (filename);
+    if (file.is_open()) {
+      secretKey.load(context->context, file);
+      SecretKeyVariant keys(secretKey);
+      keys.key = secretKey;
+      file.close();
+    } else {
+      std::cout << "Error opening file!" << std::endl;
+      exit(1);
+    }
+
+    sec_key->scalar<Variant>()() = std::move(sec_key);
   }
 };
 
@@ -183,24 +189,9 @@ class SealSaveSecretkeyOp : public OpKernel {
       sec_key.save(file);
       file.close();
     } else {
-      // TODO: report failure
+      std::cout << "Error opening file!" << std::endl;
+      exit(1);
     }
-  }
-};
-
-class SealSaveCiphertextOp: public OpKernel {
- public:
-  explicit SealSaveCiphertextOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
-  void Compute(OpKernelContext* ctx) override {
-     const SecretKeyVariant* a = nullptr;
-     OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &a));
-     // Tensor* out0;
-     // OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
-     // seal::CipherText ciphertext(secretkey->key);
-     // std::filebuf fb;
-     // fb.open("ciphertext",std::ios::out);
-     // std::ostream ciph(&fb);
-     // secretKey.save(ciph);
   }
 };
 
@@ -247,50 +238,66 @@ class SealKeyGenOp : public OpKernel {
   bool gen_galois = false;
 };
 
-class SealDummyOp : public OpKernel {
- public:
-  explicit SealDummyOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_public", &gen_public));
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_relin", &gen_relin));
-    OP_REQUIRES_OK(ctx, ctx->GetAttr("gen_galois", &gen_galois));
-  }
+class SealLoadCipherOp: public OpKernel{
+  public:
+   explicit SealLoadCipherOp(OpKernelConstruction* context) : OpKernel(context) {}
 
-  void Compute(OpKernelContext* ctx) override {
-    std::cout<<"Dentro de Dummy"<<std::endl;
-    Tensor* out0;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &out0));
+   void Compute(OpKernelContext* ctx) override {
+     const Tensor* filename_tensor;
+     const CipherTensor* a = nullptr;
+     OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+     const std::string filename = filename_tensor->flat<std::string>()(0);
 
-    Tensor* out1;
-    OP_REQUIRES_OK(ctx, ctx->allocate_output(1, TensorShape{}, &out1));
+     Tensor* output;
+     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
+    
+     RefCountPtr<Context> context;
+     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+     Ciphertext new_b;
+     const CipherTensor* res = nullptr;
 
-    RefCountPtr<Context> context;
-    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+     std::ifstream file (filename);
+     if (file.is_open()) {
+       new_b.load(context->context,file);
+      // res->value=new_b;
+      // secretKey.load(context->context, file);
+      // SecretKeyVariant keys(secretKey);
+      // keys.key = secretKey;
+         file.close();
+     } else {
+      // TODO report failure
+     }
 
-    seal::KeyGenerator gen(context->context);
-
-    PublicKeysVariant pub_keys;
-
-    if (gen_public) {
-      pub_keys.public_key = gen.public_key();
-    }
-
-    if (gen_relin) {
-      pub_keys.relin_keys = gen.relin_keys();
-    }
-
-    if (gen_galois) {
-      pub_keys.galois_keys = gen.galois_keys();
-    }
-
-    out0->scalar<Variant>()() = std::move(pub_keys);
-    out1->scalar<Variant>()() = SecretKeyVariant(gen.secret_key());
-  }
-
-  bool gen_public = true;
-  bool gen_relin = false;
-  bool gen_galois = false;
+     output->scalar<Variant>()() = std::move(res);
+   }
 };
+class SealSaveCipherOp: public OpKernel{
+  public:
+   explicit SealSaveCipherOp(OpKernelConstruction* context) : OpKernel(context) {}
 
+   void Compute(OpKernelContext* ctx) override {
+      const CipherTensor* cipher = nullptr;
+      const Tensor* filename_tensor;
+      
+      OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+      const std::string filename = filename_tensor->flat<std::string>()(0);
+      RefCountPtr<Context> context;
+      OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
+      
+      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &cipher));
+      for (int i = 0; i < cipher->rows(); i++) {
+         seal::Ciphertext ctext(cipher->value[i]);
+         std::ofstream file(filename, std::ios::out);
+         if (file.is_open()) {
+           ctext.save(file);
+           file.close();
+         } else {
+           // TODO: report failure
+         }
+      }
+   }
+
+};
 template <typename T>
 class SealEncryptOp : public OpKernel {
  public:
@@ -778,8 +785,9 @@ REGISTER_KERNEL_BUILDER(Name("SealSaveSecretkey").Device(DEVICE_CPU), SealSaveSe
 REGISTER_KERNEL_BUILDER(Name("SealSavePublickey").Device(DEVICE_CPU), SealSavePublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealLoadPublickey").Device(DEVICE_CPU), SealLoadPublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealLoadSecretkey").Device(DEVICE_CPU), SealLoadSecretkeyOp);
+REGISTER_KERNEL_BUILDER(Name("SealSaveCipher").Device(DEVICE_CPU),SealSaveCipherOp);
+REGISTER_KERNEL_BUILDER(Name("SealLoadCipher").Device(DEVICE_CPU),SealLoadCipherOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
-REGISTER_KERNEL_BUILDER(Name("SealDummy").Device(DEVICE_CPU), SealDummyOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);
 REGISTER_KERNEL_BUILDER(Name("SealMatMul").Device(DEVICE_CPU), SealMatMulOp);
