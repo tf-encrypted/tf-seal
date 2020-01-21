@@ -1,0 +1,10 @@
+syntax ="proto3";
+
+package hermes;
+
+message Cipher {
+    int32 row=1;
+    int32 colum=2;
+
+    repeated bytes ciphertexts=3;
+}
