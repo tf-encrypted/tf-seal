@@ -32,6 +32,30 @@ load("//external/tf:tf_configure.bzl", "tf_configure")
 tf_configure(name = "local_config_tf")
 
 #
+# Protobuf
+#
+
+# Note that we have to use the specific version used by TensorFlow.
+
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "b9e92f9af8819bbbc514e2902aec860415b70209f31dfc8c4fa72515a5df9d59",
+    strip_prefix = "protobuf-310ba5ee72661c081129eb878c1bbcec936b20f0",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz"],
+)
+
+http_archive(
+    name = "com_google_protobuf_cc",
+    sha256 = "b9e92f9af8819bbbc514e2902aec860415b70209f31dfc8c4fa72515a5df9d59",
+    strip_prefix = "protobuf-310ba5ee72661c081129eb878c1bbcec936b20f0",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz"],
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+#
 # SEAL
 #
 

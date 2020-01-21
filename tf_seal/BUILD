@@ -2,6 +2,16 @@ licenses(["notice"])  # Apache 2.0
 
 package(default_visibility = ["//visibility:public"])
 
+proto_library(
+    name = "tfseal_proto",
+    srcs = ["protobuf/tfseal.proto"],
+)
+
+cc_proto_library(
+    name = "tfseal_cc_proto",
+    deps = [":tfseal_proto"],
+)
+
 cc_binary(
     name = 'python/ops/_seal_ops.so',
     srcs = [
@@ -18,7 +28,8 @@ cc_binary(
     deps = [
         "@local_config_tf//:libtensorflow_framework",
         "@local_config_tf//:tf_header_lib",
-        "@seal//:lib"
+        "@seal//:lib",
+        "tfseal_cc_proto",
     ],
     copts = ["-pthread", "-std=c++17", "-D_GLIBCXX_USE_CXX11_ABI=1", "-fPIC"],
 )

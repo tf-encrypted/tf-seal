@@ -40,3 +40,6 @@ bazel*
 .mypy**
 **.whl
 __pycache__
+
+# macOS
+.DS_Store

@@ -19,6 +19,8 @@
 #include "tf_seal/cc/kernels/seal_helpers.h"
 #include "tf_seal/cc/kernels/seal_tensors.h"
 
+#include "tf_seal/protobuf/tfseal.pb.h"
+
 namespace tf_seal {
 
 using tensorflow::DEVICE_CPU;
@@ -284,6 +286,10 @@ class SealSaveCipherOp: public OpKernel{
       RefCountPtr<Context> context;
       OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
       
+      proto::EncryptedTensor foo;
+      foo.set_rows(10);
+      foo.set_cols(20);
+
       OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &cipher));
       for (int i = 0; i < cipher->rows(); i++) {
          seal::Ciphertext ctext(cipher->value[i]);
