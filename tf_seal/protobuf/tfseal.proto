@@ -2,6 +2,28 @@ syntax = "proto3";
 
 package tf_seal.proto;
 
+message SecretKey {
+  bytes raw_secretkey = 1;
+}
+
+message PublicKey {
+  bytes raw_publickey = 1;
+}
+
+message RelinKeys {
+  repeated bytes raw_relinkeys = 1;
+}
+
+message GaloisKeys {
+  repeated bytes raw_galoiskeys = 1;
+}
+
+message EvaluationKeys {
+  PublicKey public_key = 1;
+  RelinKeys relin_keys = 2;
+  GaloisKeys galois_keys = 3;
+}
+
 message EncryptedTensor {
   int64 rows = 1;
   int64 cols = 2;
