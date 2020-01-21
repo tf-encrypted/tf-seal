@@ -56,6 +56,7 @@ py_test(
         ":seal_ops_py",
     ],
     srcs_version = "PY2AND3",
+    timeout = "long",
 )
 
 py_test(
@@ -68,6 +69,7 @@ py_test(
         ":seal_ops_py",
     ],
     srcs_version = "PY2AND3",
+    timeout = "long",
 )
 
 py_library(
