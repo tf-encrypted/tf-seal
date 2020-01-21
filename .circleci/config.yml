@@ -29,11 +29,17 @@ jobs:
       - checkout
       - *bootstrap
       - run:
-          name: run tests
+          name: Build
           command: |
             . venv/bin/activate
             export PATH=$PATH:/root/bin
             make clean
+            make build
+      - run:
+          name: Test
+          command: |
+            . venv/bin/activate
+            export PATH=$PATH:/root/bin
             make test
 
   build-pip-linux:
