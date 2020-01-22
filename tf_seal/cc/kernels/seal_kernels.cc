@@ -286,10 +286,11 @@ class SealSaveCipherOp: public OpKernel{
       RefCountPtr<Context> context;
       OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
       
-      proto::EncryptedTensor foo;
-      foo.set_rows(10);
-      foo.set_cols(20);
-
+      proto::EncryptedTensor cf;
+      cf.set_rows(cipher->rows());
+      cf.set_cols(cipher->cols());
+      std::ostringstream ct;
+      
       OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &cipher));
       for (int i = 0; i < cipher->rows(); i++) {
          seal::Ciphertext ctext(cipher->value[i]);
@@ -300,7 +301,9 @@ class SealSaveCipherOp: public OpKernel{
          } else {
            // TODO: report failure
          }
+      
       }
+      
    }
 
 };
