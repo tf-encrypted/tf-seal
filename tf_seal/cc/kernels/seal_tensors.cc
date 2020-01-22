@@ -6,11 +6,11 @@ namespace tf_seal {
 
 const char CipherTensor::kTypeName[] = "CipherTensor";
 
-void CipherTensor::Encode(VariantTensorData* data) const {
+void CipherTensor::Encode(tensorflow::VariantTensorData* data) const {
   // TODO(justin1121) implement this for networking
 }
 
-bool CipherTensor::Decode(const VariantTensorData& data) {
+bool CipherTensor::Decode(const tensorflow::VariantTensorData& data) {
   // TODO(justin1121) implement this for networking
   return true;
 }

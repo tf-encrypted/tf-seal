@@ -14,11 +14,8 @@
 
 #include "seal/seal.h"
 
+
 namespace tf_seal {
-
-using tensorflow::VariantTensorData;
-
-using seal::Ciphertext;
 
 class CipherTensor {
  public:
@@ -31,16 +28,17 @@ class CipherTensor {
 
   std::string TypeName() const { return kTypeName; }
 
-  void Encode(VariantTensorData* data) const;
+  void Encode(tensorflow::VariantTensorData* data) const;
 
-  bool Decode(const VariantTensorData& data);
+  bool Decode(const tensorflow::VariantTensorData& data);
+
 
   std::string DebugString() const { return "CipherTensor"; }
 
   int rows() const { return _rows; }
   int cols() const { return _cols; }
 
-  std::vector<Ciphertext> value;
+  std::vector<seal::Ciphertext> value;
 
  private:
   int _rows;
