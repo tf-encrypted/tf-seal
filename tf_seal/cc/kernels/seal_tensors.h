@@ -14,6 +14,7 @@
 
 #include "seal/seal.h"
 
+#include "tf_seal/protobuf/tfseal.pb.h"
 
 namespace tf_seal {
 
@@ -32,6 +33,9 @@ class CipherTensor {
 
   bool Decode(const tensorflow::VariantTensorData& data);
 
+  void Encode(proto::EncryptedTensor* buf) const;
+
+  bool Decode(const proto::EncryptedTensor& buf);
 
   std::string DebugString() const { return "CipherTensor"; }
 

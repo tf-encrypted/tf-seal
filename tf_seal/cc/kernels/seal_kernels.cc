@@ -18,7 +18,6 @@
 #include "tf_seal/cc/kernels/seal_context.h"
 #include "tf_seal/cc/kernels/seal_helpers.h"
 #include "tf_seal/cc/kernels/seal_tensors.h"
-
 #include "tf_seal/protobuf/tfseal.pb.h"
 
 namespace tf_seal {
@@ -273,40 +272,28 @@ class SealLoadCipherOp: public OpKernel{
      output->scalar<Variant>()() = std::move(res);
    }
 };
-class SealSaveCipherOp: public OpKernel{
-  public:
-   explicit SealSaveCipherOp(OpKernelConstruction* context) : OpKernel(context) {}
 
-   void Compute(OpKernelContext* ctx) override {
-      const CipherTensor* cipher = nullptr;
-      const Tensor* filename_tensor;
-      
-      OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
-      const std::string filename = filename_tensor->flat<std::string>()(0);
-      RefCountPtr<Context> context;
-      OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-      
-      proto::EncryptedTensor cf;
-      cf.set_rows(cipher->rows());
-      cf.set_cols(cipher->cols());
-      std::ostringstream ct;
-      
-      OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &cipher));
-      for (int i = 0; i < cipher->rows(); i++) {
-         seal::Ciphertext ctext(cipher->value[i]);
-         std::ofstream file(filename, std::ios::out);
-         if (file.is_open()) {
-           ctext.save(file);
-           file.close();
-         } else {
-           // TODO: report failure
-         }
-      
-      }
-      
-   }
+class SealSaveCipherOp : public OpKernel {
+ public:
+  explicit SealSaveCipherOp(OpKernelConstruction *context) : OpKernel(context) {}
 
+  void Compute(OpKernelContext *ctx) override {
+    const Tensor *filename_tensor;
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+    const std::string filename = filename_tensor->flat<std::string>()(0);
+
+    const CipherTensor *cipher = nullptr;
+    OP_REQUIRES_OK(ctx, GetVariant(ctx, 1, &cipher));
+
+    proto::EncryptedTensor buf;
+    cipher->Encode(&buf);
+
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    OP_REQUIRES(ctx, buf.SerializeToOstream(&file),
+                tensorflow::errors::Unknown("Failed to serialize"));
+  }
 };
+
 template <typename T>
 class SealEncryptOp : public OpKernel {
  public:

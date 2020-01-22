@@ -27,5 +27,5 @@ message EvaluationKeys {
 message EncryptedTensor {
   int64 rows = 1;
   int64 cols = 2;
-  repeated bytes raw_ciphertexts = 3;
+  repeated bytes seal_ciphertext = 3;
 }

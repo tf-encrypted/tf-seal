@@ -103,15 +103,24 @@ class SealTest(test.TestCase):
       np.testing.assert_equal(sess.run(ans), inp)
 
   def test_save_cipher(self):
-
     _, tmp_filename = tempfile.mkstemp()
 
+    x = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
+
     with tf.Session() as sess:
-      inp = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
       pub_key , _  = seal_key_gen()
-      variant = seal_encrypt(inp, pub_key)
-      ans = seal_save_cipher(tmp_filename,variant)
-      sess.run(ans)
+      xe = seal_encrypt(x, pub_key)
+      save_op = seal_save_cipher(tmp_filename, xe)
+      sess.run(save_op)
+
+    assert os.path.isfile(tmp_filename), \
+        "Did not find expected file: '{}'".format(
+            tmp_filename)
+    assert os.path.getsize(tmp_filename) > 5 * 1024 * 1024, \
+        "File smaller than expected: '{}', size: {}".format(
+            tmp_filename, os.path.getsize(tmp_filename))
+
+    os.remove(tmp_filename)
 
   def test_add(self):
     with tf.Session() as sess:
