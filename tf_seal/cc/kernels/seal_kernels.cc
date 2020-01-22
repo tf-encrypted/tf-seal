@@ -239,38 +239,34 @@ class SealKeyGenOp : public OpKernel {
   bool gen_galois = false;
 };
 
-class SealLoadCipherOp: public OpKernel{
-  public:
-   explicit SealLoadCipherOp(OpKernelConstruction* context) : OpKernel(context) {}
+class SealLoadCipherOp : public OpKernel {
+ public:
+  explicit SealLoadCipherOp(OpKernelConstruction *context) : OpKernel(context) {}
 
-   void Compute(OpKernelContext* ctx) override {
-     const Tensor* filename_tensor;
-     const CipherTensor* a = nullptr;
-     OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
-     const std::string filename = filename_tensor->flat<std::string>()(0);
+  void Compute(OpKernelContext *ctx) override {
+    const Tensor *filename_tensor;
+    OP_REQUIRES_OK(ctx, ctx->input("filename", &filename_tensor));
+    const std::string filename = filename_tensor->flat<std::string>()(0);
 
-     Tensor* output;
-     OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
-    
-     RefCountPtr<Context> context;
-     OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &context));
-     Ciphertext new_b;
-     const CipherTensor* res = nullptr;
+    Tensor *output;
+    OP_REQUIRES_OK(ctx, ctx->allocate_output(0, TensorShape{}, &output));
 
-     std::ifstream file (filename);
-     if (file.is_open()) {
-       new_b.load(context->context,file);
-      // res->value=new_b;
-      // secretKey.load(context->context, file);
-      // SecretKeyVariant keys(secretKey);
-      // keys.key = secretKey;
-         file.close();
-     } else {
-      // TODO report failure
-     }
+    RefCountPtr<Context> seal_context;
+    OP_REQUIRES_OK(ctx, LookupOrCreateWrapper(ctx, &seal_context));
 
-     output->scalar<Variant>()() = std::move(res);
-   }
+    std::ifstream file(filename);
+    OP_REQUIRES(ctx, file.is_open(),
+                tensorflow::errors::Unknown("Failed to open file '{}'", filename));
+
+    proto::EncryptedTensor buf;
+    OP_REQUIRES(ctx, buf.ParseFromIstream(&file),
+                tensorflow::errors::Unknown("Failed to parse"));
+
+    CipherTensor cipher(0, 0);
+    cipher.Decode(seal_context->context, buf);
+
+    output->scalar<Variant>()() = std::move(cipher);
+  }
 };
 
 class SealSaveCipherOp : public OpKernel {
@@ -781,8 +777,8 @@ REGISTER_KERNEL_BUILDER(Name("SealSaveSecretkey").Device(DEVICE_CPU), SealSaveSe
 REGISTER_KERNEL_BUILDER(Name("SealSavePublickey").Device(DEVICE_CPU), SealSavePublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealLoadPublickey").Device(DEVICE_CPU), SealLoadPublickeyOp);
 REGISTER_KERNEL_BUILDER(Name("SealLoadSecretkey").Device(DEVICE_CPU), SealLoadSecretkeyOp);
-REGISTER_KERNEL_BUILDER(Name("SealSaveCipher").Device(DEVICE_CPU),SealSaveCipherOp);
-REGISTER_KERNEL_BUILDER(Name("SealLoadCipher").Device(DEVICE_CPU),SealLoadCipherOp);
+REGISTER_KERNEL_BUILDER(Name("SealSaveCipher").Device(DEVICE_CPU), SealSaveCipherOp);
+REGISTER_KERNEL_BUILDER(Name("SealLoadCipher").Device(DEVICE_CPU), SealLoadCipherOp);
 REGISTER_KERNEL_BUILDER(Name("SealKeyGen").Device(DEVICE_CPU), SealKeyGenOp);
 REGISTER_KERNEL_BUILDER(Name("SealAdd").Device(DEVICE_CPU), SealAddOp);
 REGISTER_KERNEL_BUILDER(Name("SealMul").Device(DEVICE_CPU), SealMulOp);

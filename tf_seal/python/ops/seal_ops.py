@@ -5,11 +5,13 @@ op_lib_file = resource_loader.get_path_to_datafile('_seal_ops.so')
 seal_ops = load_library.load_op_library(op_lib_file)
 
 seal_key_gen = seal_ops.seal_key_gen
+
 seal_save_publickey = seal_ops.seal_save_publickey
 seal_load_publickey = seal_ops.seal_load_publickey
 seal_save_secretkey = seal_ops.seal_save_secretkey
 seal_load_secretkey = seal_ops.seal_load_secretkey
 seal_save_cipher = seal_ops.seal_save_cipher
+seal_load_cipher = seal_ops.seal_load_cipher
 
 seal_encrypt = seal_ops.seal_encrypt
 seal_decrypt = seal_ops.seal_decrypt

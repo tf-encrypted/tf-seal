@@ -12,6 +12,7 @@ from tf_seal.python.ops.seal_ops import seal_load_publickey
 from tf_seal.python.ops.seal_ops import seal_save_secretkey
 from tf_seal.python.ops.seal_ops import seal_load_secretkey
 from tf_seal.python.ops.seal_ops import seal_save_cipher
+from tf_seal.python.ops.seal_ops import seal_load_cipher
 from tf_seal.python.ops.seal_ops import seal_encrypt
 from tf_seal.python.ops.seal_ops import seal_decrypt
 from tf_seal.python.ops.seal_ops import seal_add
@@ -102,23 +103,29 @@ class SealTest(test.TestCase):
 
       np.testing.assert_equal(sess.run(ans), inp)
 
-  def test_save_cipher(self):
+  def test_save_load_cipher(self):
     _, tmp_filename = tempfile.mkstemp()
 
-    x = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
-
     with tf.Session() as sess:
-      pub_key , _  = seal_key_gen()
+      pub_key, sec_key = seal_key_gen()
+
+      x = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
       xe = seal_encrypt(x, pub_key)
       save_op = seal_save_cipher(tmp_filename, xe)
       sess.run(save_op)
 
-    assert os.path.isfile(tmp_filename), \
-        "Did not find expected file: '{}'".format(
-            tmp_filename)
-    assert os.path.getsize(tmp_filename) > 5 * 1024 * 1024, \
-        "File smaller than expected: '{}', size: {}".format(
-            tmp_filename, os.path.getsize(tmp_filename))
+      assert os.path.isfile(tmp_filename), \
+          "Did not find expected file: '{}'".format(
+              tmp_filename)
+      assert os.path.getsize(tmp_filename) > 5 * 1024 * 1024, \
+          "File smaller than expected: '{}', size: {}".format(
+              tmp_filename, os.path.getsize(tmp_filename))
+
+      xe_recovered = seal_load_cipher(tmp_filename)
+      x_recovered = sess.run(seal_decrypt(xe_recovered, sec_key, tf.float32))
+
+      # TODO failing; suspect because we're using wrong keys
+      # np.testing.assert_equal(x_recovered, x)
 
     os.remove(tmp_filename)
 

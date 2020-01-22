@@ -26,7 +26,20 @@ void CipherTensor::Encode(proto::EncryptedTensor* buf) const {
   }
 }
 
-bool CipherTensor::Decode(const proto::EncryptedTensor& buf) {
+bool CipherTensor::Decode(
+    const std::shared_ptr<seal::SEALContext> seal_context,
+    const proto::EncryptedTensor& buf)
+{
+  _rows = buf.rows();
+  _cols = buf.cols();
+
+  value.clear();
+  for (auto serialized_ciphertext : buf.seal_ciphertext()) {
+    std::istringstream stream(serialized_ciphertext);
+    seal::Ciphertext ciphertext;
+    ciphertext.load(seal_context, stream);
+    value.push_back(ciphertext);
+  }
 
   return true;
 }

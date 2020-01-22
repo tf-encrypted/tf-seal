@@ -35,7 +35,9 @@ class CipherTensor {
 
   void Encode(proto::EncryptedTensor* buf) const;
 
-  bool Decode(const proto::EncryptedTensor& buf);
+  bool Decode(
+      const std::shared_ptr<seal::SEALContext> seal_context,
+      const proto::EncryptedTensor& buf);
 
   std::string DebugString() const { return "CipherTensor"; }
 
