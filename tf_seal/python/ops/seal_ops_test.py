@@ -106,26 +106,28 @@ class SealTest(test.TestCase):
   def test_save_load_cipher(self):
     _, tmp_filename = tempfile.mkstemp()
 
-    with tf.Session() as sess:
-      pub_key, sec_key = seal_key_gen()
+    pub_key, sec_key = seal_key_gen()
 
-      x = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
-      xe = seal_encrypt(x, pub_key)
-      save_op = seal_save_cipher(tmp_filename, xe)
-      sess.run(save_op)
+    x = np.array([[44.44, 55.55], [66.66, 77.77]], np.float32)
+    xe = seal_encrypt(x, pub_key)
+    save_op = seal_save_cipher(tmp_filename, xe)
 
-      assert os.path.isfile(tmp_filename), \
-          "Did not find expected file: '{}'".format(
-              tmp_filename)
-      assert os.path.getsize(tmp_filename) > 5 * 1024 * 1024, \
-          "File smaller than expected: '{}', size: {}".format(
-              tmp_filename, os.path.getsize(tmp_filename))
-
+    with tf.control_dependencies([save_op]):
       xe_recovered = seal_load_cipher(tmp_filename)
-      x_recovered = sess.run(seal_decrypt(xe_recovered, sec_key, tf.float32))
+      x_recovered = seal_decrypt(xe_recovered, sec_key, tf.float32)
 
-      # TODO failing; suspect because we're using wrong keys
-      # np.testing.assert_equal(x_recovered, x)
+    with tf.Session() as sess:
+      # TODO
+      # this would fail if saving and loading were done in different
+      # session runs since each would generate a fresh keypair
+      np.testing.assert_equal(sess.run(x_recovered), x)
+
+    assert os.path.isfile(tmp_filename), \
+        "Did not find expected file: '{}'".format(
+            tmp_filename)
+    assert os.path.getsize(tmp_filename) > 5 * 1024 * 1024, \
+        "File smaller than expected: '{}', size: {}".format(
+            tmp_filename, os.path.getsize(tmp_filename))
 
     os.remove(tmp_filename)
 
